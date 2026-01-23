@@ -1,6 +1,39 @@
 #include "exec.h"
 #include <stdio.h>
 
+static uint32_t calc_addr_bytes(const instr_t *inst, regfile_t *rf) {
+    // base vem de registrador (word_t), offset é inst->imm (word_t)
+    // fazemos em 64-bit pra evitar overflow bizarro.
+    int64_t base = (int64_t)(uint32_t)regfile_read(rf, inst->rs1);
+    int64_t off  = (int64_t)inst->imm;
+    int64_t addr = base + off;
+
+    if (addr < 0 || addr > 0xFFFFFFFFLL) {
+        printf("Address overflow/underflow: base=%lld off=%lld\n", base, off);
+        return 0; // ou exit(1)
+    }
+    return (uint32_t)addr;
+}
+
+static void exec_ld(const instr_t *inst, regfile_t *rf, memory_t *mem) {
+    // ld rd, rs1, imm => R[rd] = MEM32[R[rs1] + imm]
+    uint32_t addr = calc_addr_bytes(inst, rf);
+    word_t v = memory_load_w(mem, addr);
+    regfile_write(rf, inst->rd, v);
+}
+
+static void exec_ldc(const instr_t *inst, regfile_t *rf) {
+    // ldc rd, imm => R[rd] = imm
+    regfile_write(rf, inst->rd, inst->imm);
+}
+
+static void exec_st(const instr_t *inst, regfile_t *rf, memory_t *mem) {
+    // st rs2, rs1, imm => MEM32[R[rs1] + imm] = R[rs2]
+    uint32_t addr = calc_addr_bytes(inst, rf);
+    word_t v = regfile_read(rf, inst->rs2);
+    memory_store_w(mem, addr, v);
+}
+
 static void exec_add(const instr_t *inst, regfile_t *rf) {
     // add rd, rs1, rs2  => R[rd] = R[rs1] + R[rs2]
     word_t a = regfile_read(rf, inst->rs1);
@@ -83,8 +116,11 @@ static void exec_shr(const instr_t *inst, regfile_t *rf){
     regfile_write(rf, inst->rd, (word_t)(a >> sh));
 }
 
-void exec_instr(const instr_t *inst, regfile_t *rf) {
+void exec_instr(const instr_t *inst, regfile_t *rf, memory_t *mem) {
     switch (inst->op) {
+        case OP_LD:     exec_ld(inst, rf, mem); break;
+        case OP_LDC:    exec_ldc(inst, rf); break;
+        case OP_ST:     exec_st(inst, rf, mem); break;
         case OP_ADD:    exec_add(inst, rf);  break;
         case OP_ADDI:   exec_addi(inst, rf); break;
         case OP_SUB:    exec_sub(inst, rf); break;

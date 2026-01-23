@@ -2,6 +2,9 @@
 #define ISA_OPCODE_H
 
 typedef enum {
+    OP_LD,
+    OP_LDC,
+    OP_ST,
     OP_ADD,
     OP_ADDI,
     OP_SUB,
