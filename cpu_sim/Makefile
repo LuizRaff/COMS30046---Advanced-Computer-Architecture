@@ -1,11 +1,12 @@
 CC=gcc
 CFLAGS=-std=c11 -Wall -Wextra -O2 -Isrc
 
-MMAIN = src/main.c 
-MTEST = src/test.c
+MMAIN=src/main.c 
+MTEST=src/test.c
       
-SRC	= src/core/regfile.c \
-      src/isa/exec.c
+SRC=src/core/regfile.c \
+      src/isa/exec.c \
+	  src/core/memory.c
 
 MOUT = sim
 TOUT = test

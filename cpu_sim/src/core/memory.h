@@ -6,8 +6,8 @@
 #include <stdint.h>
 
 typedef struct {
-    word_t *words;     // array de words (32-bit)
-    size_t nwords;     // tamanho em words
+    word_t *words;
+    size_t nwords;
 } memory_t;
 
 int  memory_init(memory_t *m, size_t nwords);
