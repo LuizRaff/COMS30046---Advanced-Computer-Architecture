@@ -1,5 +1,6 @@
 #include "exec.h"
 #include <stdio.h>
+#include <inttypes.h>
 
 static uint32_t calc_addr_bytes(const instr_t *inst, regfile_t *rf) {
     int64_t base = (int64_t)(uint32_t)regfile_read(rf, inst->rs1);
@@ -7,7 +8,7 @@ static uint32_t calc_addr_bytes(const instr_t *inst, regfile_t *rf) {
     int64_t addr = base + off;
 
     if (addr < 0 || addr > 0xFFFFFFFFLL) {
-        printf("Address overflow/underflow: base=%lld off=%lld\n", base, off);
+        printf("Address overflow/underflow: base=%" PRId64 " off=%" PRId64 "\n", base, off);
         return 0;
     }
     return (uint32_t)addr;
