@@ -24,12 +24,10 @@ typedef enum {
     OP_SHR,
     OP_SHL,
 
-    // Stage 1.3: control-flow
-    OP_B,      // absolute branch to immediate address
-    OP_J,      // relative jump by immediate offset
-    OP_BLTH,   // absolute branch if rs1 < rs2
+    OP_B,
+    OP_J,
+    OP_BLTH,
 
-    // convenience (optional)
     OP_HALT
 } opcode_t;
 

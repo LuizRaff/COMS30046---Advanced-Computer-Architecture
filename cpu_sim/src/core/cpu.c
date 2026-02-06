@@ -5,6 +5,7 @@
 
 int cpu_init(cpu_t *cpu, size_t mem_words) {
     cpu->pc = 0;
+    cpu->cicles = 0;
     regfile_init(&cpu->rf);
     if (memory_init(&cpu->mem, mem_words) != 0) return -1;
     return 0;
@@ -30,7 +31,8 @@ static int set_pc_checked(cpu_t *cpu, int64_t next_pc, size_t program_len) {
 }
 
 int cpu_step(cpu_t *cpu, const instr_t *program, size_t program_len) {
-    if (cpu->pc >= program_len) return 1; // finished
+    if (cpu->pc >= program_len) return 1;
+    cpu->cicles++;
 
     const instr_t *inst = &program[cpu->pc];
 

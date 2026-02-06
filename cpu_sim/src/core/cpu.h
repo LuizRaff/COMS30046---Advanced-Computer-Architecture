@@ -9,6 +9,7 @@
 
 typedef struct {
     uint32_t pc;
+    uint32_t cicles;
     regfile_t rf;
     memory_t mem;
 } cpu_t;
