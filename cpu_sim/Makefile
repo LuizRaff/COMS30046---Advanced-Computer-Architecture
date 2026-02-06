@@ -60,3 +60,9 @@ test-all:
 	rm -f test_ham_wei
 	rm -f test_liver_loops
 	rm -f test_vec_add
+
+COMMITMSG ?= vecadd
+commit:
+	git add .
+	git commit -m "$(COMMITMSG)"
+	git push
