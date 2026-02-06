@@ -56,7 +56,7 @@ int main(void) {
         printf("%d + %d = %d\n", (int)b, (int)c, (int)a);
     }
 
-    printf("cicles total: %d\n", cpu.cicles);
+    printf("cicles total: %d\n", cpu.cycles);
 
     cpu_free(&cpu);
     return 0;

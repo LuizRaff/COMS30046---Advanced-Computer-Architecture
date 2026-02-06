@@ -90,11 +90,11 @@ static void exec_cmp(const instr_t *inst, regfile_t *rf) {
     word_t a = regfile_read(rf, inst->rs1);
     word_t b = regfile_read(rf, inst->rs2);
     if (a < b){
-        regfile_write(rf, inst->rd, (word_t)(1));
+        regfile_write(rf, inst->rd, (word_t)(-1));
     } else if (a == b){
         regfile_write(rf, inst->rd, (word_t)(0));
     } else {
-        regfile_write(rf, inst->rd, (word_t)(-1));
+        regfile_write(rf, inst->rd, (word_t)(1));
     }
 }
 
