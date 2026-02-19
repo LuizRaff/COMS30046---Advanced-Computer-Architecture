@@ -112,6 +112,7 @@ static void exec_shr(const instr_t *inst, regfile_t *rf){
 
 void exec_instr(const instr_t *inst, regfile_t *rf, memory_t *mem) {
     switch (inst->op) {
+        case OP_NOP:    /* bubble */ break;
         case OP_LD:     exec_ld(inst, rf, mem); break;
         case OP_LDC:    exec_ldc(inst, rf); break;
         case OP_ST:     exec_st(inst, rf, mem); break;

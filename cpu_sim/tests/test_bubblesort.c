@@ -60,6 +60,8 @@ int main(void) {
     }
     printf("}\n");
 
+    cpu_print_stats(&cpu);
+
     cpu_free(&cpu);
     return 0;
 }

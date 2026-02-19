@@ -30,6 +30,7 @@ int main(void) {
     if (r == -1) { printf("CPU fault\n"); cpu_free(&cpu); return 1; }
 
     printf("fact(5) = %d (expected 120)\n", (int)regfile_read(&cpu.rf, 3));
+    cpu_print_stats(&cpu);
     cpu_free(&cpu);
     return 0;
 }

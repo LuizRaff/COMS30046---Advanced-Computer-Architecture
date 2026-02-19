@@ -42,7 +42,7 @@ int main(void) {
         { .op = OP_BLTH, .rs1 = 4, .rs2 = 5, .imm = 5, .has_imm = true },
     };
 
-    int r = cpu_run(&cpu, program, (int)(sizeof(program) / sizeof(program[0])), 1000000);
+    int r = cpu_run_dump(&cpu, program, sizeof(program)/sizeof(program[0]), 1000000, true, "pipeline_dump.txt");;
     if (r == -1) {
         printf("CPU fault while running\n");
         cpu_free(&cpu);
@@ -56,7 +56,7 @@ int main(void) {
         printf("%d + %d = %d\n", (int)b, (int)c, (int)a);
     }
 
-    printf("cicles total: %d\n", cpu.cycles);
+    cpu_print_stats(&cpu);
 
     cpu_free(&cpu);
     return 0;

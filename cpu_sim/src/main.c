@@ -2,6 +2,7 @@
 #include <stdint.h>
 
 #include "core/cpu.h"
+#include "core/memory.h"
 
 int main(void) {
     cpu_t cpu;
@@ -44,6 +45,8 @@ int main(void) {
     printf("r4=%d (expected 222)\n",  regfile_read(&cpu.rf, 4));
     printf("r10=%d (expected 5)\n",   regfile_read(&cpu.rf, 10));
     printf("r5=%d (expected 123)\n",  regfile_read(&cpu.rf, 5));
+
+    cpu_print_stats(&cpu);
 
     cpu_free(&cpu);
     return 0;

@@ -30,6 +30,7 @@ int main(void) {
     if (r == -1) { printf("CPU fault\n"); cpu_free(&cpu); return 1; }
 
     printf("hamming(45) = %d (expected 4)\n", (int)regfile_read(&cpu.rf, 3));
+    cpu_print_stats(&cpu);
     cpu_free(&cpu);
     return 0;
 }

@@ -2,6 +2,9 @@
 #define ISA_OPCODE_H
 
 typedef enum {
+    // Pipeline bubble / no-op.
+    OP_NOP,
+
     OP_LD,
     OP_LDC,
     OP_ST,
