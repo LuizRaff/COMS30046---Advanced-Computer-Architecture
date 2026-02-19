@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
-static const char *opcode_name(opcode_t op) {
+char *opcode_name(opcode_t op) {
   switch (op) {
   case OP_NOP:
     return "nop";
@@ -54,7 +54,7 @@ static const char *opcode_name(opcode_t op) {
   }
 }
 
-static void format_inst(char *buf, size_t n, const instr_t *inst) {
+void format_inst(char *buf, size_t n, const instr_t *inst) {
   const char *op = opcode_name(inst->op);
   switch (inst->op) {
   case OP_LD:
@@ -118,7 +118,7 @@ static void format_inst(char *buf, size_t n, const instr_t *inst) {
   }
 }
 
-static void cpu_dump_pipeline_fp(const cpu_t *cpu, FILE *out) {
+void cpu_dump_pipeline_fp(const cpu_t *cpu, FILE *out) {
   char if_buf[96], id_buf[96];
   if (cpu->if_id.valid)
     format_inst(if_buf, sizeof(if_buf), &cpu->if_id.inst);

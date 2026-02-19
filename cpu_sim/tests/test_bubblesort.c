@@ -13,7 +13,7 @@ int main(void) {
     int init[N] = {9,1,8,2,7,3,6,4,5,0};
     for (int i = 0; i < N; i++) memory_store_w(&cpu.mem, (uint32_t)(A_BASE + i*4), (word_t)init[i]);
 
-    const instr_t program[] = {
+    instr_t program[] = {
         { .op=OP_LDC, .rd=1, .imm=A_BASE, .has_imm=true }, // r1=base
         { .op=OP_LDC, .rd=3, .imm=N,      .has_imm=true }, // r3=N
         { .op=OP_LDC, .rd=11,.imm=N-1,    .has_imm=true }, // r11=9

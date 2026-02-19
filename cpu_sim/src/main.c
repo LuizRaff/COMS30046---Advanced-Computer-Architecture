@@ -13,7 +13,7 @@ int main(void) {
 
   memory_store_w(&cpu.mem, 8, 1234);
 
-  const instr_t program[] = {
+  instr_t program[] = {
       {.op = OP_LDC, .rd = 1, .imm = 8, .has_imm = true},
       {.op = OP_LD, .rd = 2, .rs1 = 1, .imm = 0, .has_imm = true},
 
@@ -25,7 +25,11 @@ int main(void) {
       {.op = OP_LDC, .rd = 11, .imm = 5, .has_imm = true}, // r11 = 5
       {.op = OP_LDC, .rd = 12, .imm = 1, .has_imm = true}, // r12 = 1
       {.op = OP_ADD, .rd = 10, .rs1 = 10, .rs2 = 12, .has_imm = false}, // r10++
-      {.op = OP_BLTH, .rs1 = 10, .rs2 = 11, .imm = 8, .has_imm = true}, // if r10 < r11 goto PC=8
+      {.op = OP_BLTH,
+       .rs1 = 10,
+       .rs2 = 11,
+       .imm = 8,
+       .has_imm = true}, // if r10 < r11 goto PC=8
 
       {.op = OP_J, .imm = 2, .has_imm = true},
       {.op = OP_LDC, .rd = 5, .imm = 999, .has_imm = true}, // skipped

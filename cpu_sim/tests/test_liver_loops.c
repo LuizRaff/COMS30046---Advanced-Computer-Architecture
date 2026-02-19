@@ -18,7 +18,7 @@ int main(void) {
         memory_store_w(&cpu.mem, (uint32_t)(A_BASE + i*4), (word_t)0);
     }
 
-    const instr_t program[] = {
+    instr_t program[] = {
         { .op=OP_LDC, .rd=1, .imm=A_BASE, .has_imm=true }, // r1 = &a
         { .op=OP_LDC, .rd=2, .imm=B_BASE, .has_imm=true }, // r2 = &b
         { .op=OP_LDC, .rd=3, .imm=C_BASE, .has_imm=true }, // r3 = &c

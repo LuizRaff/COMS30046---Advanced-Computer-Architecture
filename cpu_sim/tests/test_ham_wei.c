@@ -7,7 +7,7 @@ int main(void) {
     cpu_t cpu;
     if (cpu_init(&cpu, 64) != 0) { printf("Failed to init CPU\n"); return 1; }
 
-    const instr_t program[] = {
+    instr_t program[] = {
         { .op=OP_LDC, .rd=1, .imm=45, .has_imm=true }, // x
         { .op=OP_LDC, .rd=2, .imm=1,  .has_imm=true }, // mask=1
         { .op=OP_LDC, .rd=3, .imm=0,  .has_imm=true }, // count=0
