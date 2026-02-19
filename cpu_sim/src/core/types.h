@@ -8,4 +8,4 @@ typedef int32_t word_t;
 
 #define NUM_REGS 32
 
-#endif // CORE_TYPES_H
+#endif

@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
-char *opcode_name(opcode_t op) {
+char *op_to_str(opcode_t op) {
   switch (op) {
   case OP_NOP:
     return "nop";
@@ -54,8 +54,8 @@ char *opcode_name(opcode_t op) {
   }
 }
 
-void format_inst(char *buf, size_t n, const instr_t *inst) {
-  const char *op = opcode_name(inst->op);
+void inst_to_str(char *buf, size_t n, const instr_t *inst) {
+  const char *op = op_to_str(inst->op);
   switch (inst->op) {
   case OP_LD:
     snprintf(buf, n, "%s r%d, [r%d %+d]", op, inst->rd, inst->rs1,
@@ -118,15 +118,15 @@ void format_inst(char *buf, size_t n, const instr_t *inst) {
   }
 }
 
-void cpu_dump_pipeline_fp(const cpu_t *cpu, FILE *out) {
+void dump_pipeline_to(const cpu_t *cpu, FILE *out) {
   char if_buf[96], id_buf[96];
   if (cpu->if_id.valid)
-    format_inst(if_buf, sizeof(if_buf), &cpu->if_id.inst);
+    inst_to_str(if_buf, sizeof(if_buf), &cpu->if_id.inst);
   else
     snprintf(if_buf, sizeof(if_buf), "<empty>");
 
   if (cpu->id_ex.valid)
-    format_inst(id_buf, sizeof(id_buf), &cpu->id_ex.inst);
+    inst_to_str(id_buf, sizeof(id_buf), &cpu->id_ex.inst);
   else
     snprintf(id_buf, sizeof(id_buf), "<empty>");
 
@@ -138,50 +138,50 @@ void cpu_dump_pipeline_fp(const cpu_t *cpu, FILE *out) {
           if_buf, cpu->id_ex.valid, cpu->id_ex.pc, id_buf);
 }
 
-void cpu_dump_pipeline(const cpu_t *cpu) { cpu_dump_pipeline_fp(cpu, stderr); }
+void dump_pipeline(const cpu_t *cpu) { dump_pipeline_to(cpu, stderr); }
 
-int cpu_init(cpu_t *cpu, size_t mem_words) {
+int setup_cpu(cpu_t *cpu, size_t mem_words) {
   cpu->pc = 0;
   cpu->cycles = 0;
   cpu->instrs = 0;
   cpu->if_id = (pipe_reg_t){.valid = 0};
   cpu->id_ex = (pipe_reg_t){.valid = 0};
   cpu->halted = 0;
-  regfile_init(&cpu->rf);
-  if (memory_init(&cpu->mem, mem_words) != 0)
+  regs_clear(&cpu->rf);
+  if (mem_init(&cpu->mem, mem_words) != 0)
     return -1;
   return 0;
 }
 
-void cpu_free(cpu_t *cpu) { memory_free(&cpu->mem); }
+void free_cpu(cpu_t *cpu) { mem_free(&cpu->mem); }
 
-void cpu_reset(cpu_t *cpu) {
+void reset_cpu(cpu_t *cpu) {
   cpu->pc = 0;
   cpu->cycles = 0;
   cpu->instrs = 0;
   cpu->if_id = (pipe_reg_t){.valid = 0};
   cpu->id_ex = (pipe_reg_t){.valid = 0};
   cpu->halted = 0;
-  regfile_init(&cpu->rf);
+  regs_clear(&cpu->rf);
 }
 
-void cpu_print_stats(const cpu_t *cpu) {
+void print_stats(const cpu_t *cpu) {
   double ipc =
       (cpu->cycles == 0) ? 0.0 : ((double)cpu->instrs / (double)cpu->cycles);
   printf("instructions=%" PRIu64 " cycles=%" PRIu64 " IPC=%.3f\n", cpu->instrs,
          cpu->cycles, ipc);
 }
 
-static int pc_in_range(int64_t pc, size_t program_len) {
+int valid_pc(int64_t pc, size_t program_len) {
   return !(pc < 0 || pc > (int64_t)program_len);
 }
 
-static instr_t nop_instr(void) {
+instr_t make_nop(void) {
   return (instr_t){
       .op = OP_NOP, .rd = 0, .rs1 = 0, .rs2 = 0, .imm = 0, .has_imm = false};
 }
 
-int cpu_step(cpu_t *cpu, const instr_t *program, size_t program_len) {
+int tick(cpu_t *cpu, const instr_t *program, size_t program_len) {
   if ((cpu->halted || cpu->pc >= program_len) && !cpu->if_id.valid &&
       !cpu->id_ex.valid) {
     return 1;
@@ -214,8 +214,8 @@ int cpu_step(cpu_t *cpu, const instr_t *program, size_t program_len) {
       break;
 
     case OP_BLTH: {
-      word_t a = regfile_read(&cpu->rf, inst->rs1);
-      word_t b = regfile_read(&cpu->rf, inst->rs2);
+      word_t a = reg_get(&cpu->rf, inst->rs1);
+      word_t b = reg_get(&cpu->rf, inst->rs2);
       if (a < b) {
         redirect = 1;
         redirect_pc = (int64_t)inst->imm;
@@ -235,12 +235,12 @@ int cpu_step(cpu_t *cpu, const instr_t *program, size_t program_len) {
       break;
 
     default:
-      exec_instr(inst, &cpu->rf, &cpu->mem);
+      run_instr(inst, &cpu->rf, &cpu->mem);
       break;
     }
   }
 
-  if (redirect && !pc_in_range(redirect_pc, program_len)) {
+  if (redirect && !valid_pc(redirect_pc, program_len)) {
     fprintf(stderr, "PC fault: next_pc=%" PRId64 " out of range [0..%zu]\n",
             redirect_pc, program_len);
     return -1;
@@ -251,14 +251,13 @@ int cpu_step(cpu_t *cpu, const instr_t *program, size_t program_len) {
   // -----------------------------
   pipe_reg_t id_ex_next = cpu->if_id;
   if (!cpu->if_id.valid) {
-    id_ex_next = (pipe_reg_t){.inst = nop_instr(), .pc = 0, .valid = 0};
+    id_ex_next = (pipe_reg_t){.inst = make_nop(), .pc = 0, .valid = 0};
   }
 
   // -----------------------------
   // Stage IF: fetch into IF/ID
   // -----------------------------
-  pipe_reg_t if_id_next =
-      (pipe_reg_t){.inst = nop_instr(), .pc = 0, .valid = 0};
+  pipe_reg_t if_id_next = (pipe_reg_t){.inst = make_nop(), .pc = 0, .valid = 0};
   uint32_t pc_next = cpu->pc;
 
   if (!cpu->halted && cpu->pc < program_len) {
@@ -283,18 +282,18 @@ int cpu_step(cpu_t *cpu, const instr_t *program, size_t program_len) {
   return 0;
 }
 
-int cpu_run(cpu_t *cpu, const instr_t *program, size_t program_len,
-            uint64_t max_steps) {
-  return cpu_run_debug(cpu, program, program_len, max_steps, 0);
+int run_program(cpu_t *cpu, const instr_t *program, size_t program_len,
+                uint64_t max_steps) {
+  return run_with_debug(cpu, program, program_len, max_steps, 0);
 }
 
-int cpu_run_debug(cpu_t *cpu, const instr_t *program, size_t program_len,
-                  uint64_t max_steps, uint64_t debug_period) {
+int run_with_debug(cpu_t *cpu, const instr_t *program, size_t program_len,
+                   uint64_t max_steps, uint64_t debug_period) {
   for (uint64_t step = 0; step < max_steps; step++) {
-    int r = cpu_step(cpu, program, program_len);
+    int r = tick(cpu, program, program_len);
 
     if (debug_period > 0 && (cpu->cycles % debug_period) == 0) {
-      cpu_dump_pipeline(cpu);
+      dump_pipeline(cpu);
     }
 
     if (r == 1)
@@ -305,31 +304,31 @@ int cpu_run_debug(cpu_t *cpu, const instr_t *program, size_t program_len,
   return 1;
 }
 
-int cpu_run_dump(cpu_t *cpu, const instr_t *program, size_t program_len,
+int run_and_dump(cpu_t *cpu, const instr_t *program, size_t program_len,
                  uint64_t max_steps, bool dump_enable,
                  const char *dump_filename) {
   if (!dump_enable) {
-    return cpu_run(cpu, program, program_len, max_steps);
+    return run_program(cpu, program, program_len, max_steps);
   }
   if (dump_filename == NULL || dump_filename[0] == '\0') {
     fprintf(stderr,
-            "cpu_run_dump: dump_filename is required when dump_enable=true\n");
+            "run_and_dump: dump_filename is required when dump_enable=true\n");
     return -1;
   }
 
   FILE *fp = fopen(dump_filename, "w");
   if (!fp) {
-    fprintf(stderr, "cpu_run_dump: failed to open '%s': %s\n", dump_filename,
+    fprintf(stderr, "run_and_dump: failed to open '%s': %s\n", dump_filename,
             strerror(errno));
     return -1;
   }
 
   fprintf(fp, "# pipeline dump (one entry per cycle)\n");
-  cpu_dump_pipeline_fp(cpu, fp);
+  dump_pipeline_to(cpu, fp);
 
   for (uint64_t step = 0; step < max_steps; step++) {
-    int r = cpu_step(cpu, program, program_len);
-    cpu_dump_pipeline_fp(cpu, fp);
+    int r = tick(cpu, program, program_len);
+    dump_pipeline_to(cpu, fp);
 
     if (r == 1) {
       fclose(fp);

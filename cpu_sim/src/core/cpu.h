@@ -27,24 +27,24 @@ typedef struct {
   memory_t mem;
 } cpu_t;
 
-int cpu_init(cpu_t *cpu, size_t mem_words);
-void cpu_free(cpu_t *cpu);
-void cpu_reset(cpu_t *cpu);
+int setup_cpu(cpu_t *cpu, size_t mem_words);
+void free_cpu(cpu_t *cpu);
+void reset_cpu(cpu_t *cpu);
 
-void cpu_print_stats(const cpu_t *cpu);
+void print_stats(const cpu_t *cpu);
 
-void cpu_dump_pipeline(const cpu_t *cpu);
+void dump_pipeline(const cpu_t *cpu);
 
-int cpu_step(cpu_t *cpu, const instr_t *program, size_t program_len);
+int tick(cpu_t *cpu, const instr_t *program, size_t program_len);
 
-int cpu_run(cpu_t *cpu, const instr_t *program, size_t program_len,
-            uint64_t max_steps);
+int run_program(cpu_t *cpu, const instr_t *program, size_t program_len,
+                uint64_t max_steps);
 
-int cpu_run_debug(cpu_t *cpu, const instr_t *program, size_t program_len,
-                  uint64_t max_steps, uint64_t debug_period);
+int run_with_debug(cpu_t *cpu, const instr_t *program, size_t program_len,
+                   uint64_t max_steps, uint64_t debug_period);
 
-int cpu_run_dump(cpu_t *cpu, const instr_t *program, size_t program_len,
+int run_and_dump(cpu_t *cpu, const instr_t *program, size_t program_len,
                  uint64_t max_steps, bool dump_enable,
                  const char *dump_filename);
 
-#endif // CORE_CPU_H
+#endif

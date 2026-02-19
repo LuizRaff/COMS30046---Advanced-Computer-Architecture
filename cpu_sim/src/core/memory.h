@@ -10,10 +10,10 @@ typedef struct {
   size_t nwords;
 } memory_t;
 
-int memory_init(memory_t *m, size_t nwords);
-void memory_free(memory_t *m);
+int mem_init(memory_t *m, size_t nwords);
+void mem_free(memory_t *m);
 
-word_t memory_load_w(const memory_t *m, uint32_t addr_bytes);
-void memory_store_w(memory_t *m, uint32_t addr_bytes, word_t value);
+word_t mem_load(const memory_t *m, uint32_t addr_bytes);
+void mem_store(memory_t *m, uint32_t addr_bytes, word_t value);
 
-#endif // CORE_MEMORY_H
+#endif

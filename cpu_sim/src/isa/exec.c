@@ -2,8 +2,8 @@
 #include <inttypes.h>
 #include <stdio.h>
 
-uint32_t calc_addr_bytes(const instr_t *inst, regfile_t *rf) {
-  int64_t base = (int64_t)(uint32_t)regfile_read(rf, inst->rs1);
+uint32_t addr_of(const instr_t *inst, regfile_t *rf) {
+  int64_t base = (int64_t)(uint32_t)reg_get(rf, inst->rs1);
   int64_t off = (int64_t)inst->imm;
   int64_t addr = base + off;
 
@@ -15,153 +15,153 @@ uint32_t calc_addr_bytes(const instr_t *inst, regfile_t *rf) {
   return (uint32_t)addr;
 }
 
-void exec_ld(const instr_t *inst, regfile_t *rf, memory_t *mem) {
-  uint32_t addr = calc_addr_bytes(inst, rf);
-  word_t v = memory_load_w(mem, addr);
-  regfile_write(rf, inst->rd, v);
+void do_ld(const instr_t *inst, regfile_t *rf, memory_t *mem) {
+  uint32_t addr = addr_of(inst, rf);
+  word_t v = mem_load(mem, addr);
+  reg_set(rf, inst->rd, v);
 }
 
-void exec_ldc(const instr_t *inst, regfile_t *rf) {
-  regfile_write(rf, inst->rd, inst->imm);
+void do_ldc(const instr_t *inst, regfile_t *rf) {
+  reg_set(rf, inst->rd, inst->imm);
 }
 
-void exec_st(const instr_t *inst, regfile_t *rf, memory_t *mem) {
-  uint32_t addr = calc_addr_bytes(inst, rf);
-  word_t v = regfile_read(rf, inst->rs2);
-  memory_store_w(mem, addr, v);
+void do_st(const instr_t *inst, regfile_t *rf, memory_t *mem) {
+  uint32_t addr = addr_of(inst, rf);
+  word_t v = reg_get(rf, inst->rs2);
+  mem_store(mem, addr, v);
 }
 
-void exec_add(const instr_t *inst, regfile_t *rf) {
-  word_t a = regfile_read(rf, inst->rs1);
-  word_t b = regfile_read(rf, inst->rs2);
-  regfile_write(rf, inst->rd, (word_t)(a + b));
+void do_add(const instr_t *inst, regfile_t *rf) {
+  word_t a = reg_get(rf, inst->rs1);
+  word_t b = reg_get(rf, inst->rs2);
+  reg_set(rf, inst->rd, (word_t)(a + b));
 }
 
-void exec_addi(const instr_t *inst, regfile_t *rf) {
-  word_t a = regfile_read(rf, inst->rs1);
-  regfile_write(rf, inst->rd, (word_t)(a + inst->imm));
+void do_addi(const instr_t *inst, regfile_t *rf) {
+  word_t a = reg_get(rf, inst->rs1);
+  reg_set(rf, inst->rd, (word_t)(a + inst->imm));
 }
 
-void exec_sub(const instr_t *inst, regfile_t *rf) {
-  word_t a = regfile_read(rf, inst->rs1);
-  word_t b = regfile_read(rf, inst->rs2);
-  regfile_write(rf, inst->rd, (word_t)(a - b));
+void do_sub(const instr_t *inst, regfile_t *rf) {
+  word_t a = reg_get(rf, inst->rs1);
+  word_t b = reg_get(rf, inst->rs2);
+  reg_set(rf, inst->rd, (word_t)(a - b));
 }
 
-void exec_subi(const instr_t *inst, regfile_t *rf) {
-  word_t a = regfile_read(rf, inst->rs1);
-  regfile_write(rf, inst->rd, (word_t)(a - inst->imm));
+void do_subi(const instr_t *inst, regfile_t *rf) {
+  word_t a = reg_get(rf, inst->rs1);
+  reg_set(rf, inst->rd, (word_t)(a - inst->imm));
 }
 
-void exec_mul(const instr_t *inst, regfile_t *rf) {
-  word_t a = regfile_read(rf, inst->rs1);
-  word_t b = regfile_read(rf, inst->rs2);
-  regfile_write(rf, inst->rd, (word_t)(a * b));
+void do_mul(const instr_t *inst, regfile_t *rf) {
+  word_t a = reg_get(rf, inst->rs1);
+  word_t b = reg_get(rf, inst->rs2);
+  reg_set(rf, inst->rd, (word_t)(a * b));
 }
 
-void exec_muli(const instr_t *inst, regfile_t *rf) {
-  word_t a = regfile_read(rf, inst->rs1);
-  regfile_write(rf, inst->rd, (word_t)(a * inst->imm));
+void do_muli(const instr_t *inst, regfile_t *rf) {
+  word_t a = reg_get(rf, inst->rs1);
+  reg_set(rf, inst->rd, (word_t)(a * inst->imm));
 }
 
-void exec_and(const instr_t *inst, regfile_t *rf) {
-  word_t a = regfile_read(rf, inst->rs1);
-  word_t b = regfile_read(rf, inst->rs2);
-  regfile_write(rf, inst->rd, (word_t)(a & b));
+void do_and(const instr_t *inst, regfile_t *rf) {
+  word_t a = reg_get(rf, inst->rs1);
+  word_t b = reg_get(rf, inst->rs2);
+  reg_set(rf, inst->rd, (word_t)(a & b));
 }
 
-void exec_or(const instr_t *inst, regfile_t *rf) {
-  word_t a = regfile_read(rf, inst->rs1);
-  word_t b = regfile_read(rf, inst->rs2);
-  regfile_write(rf, inst->rd, (word_t)(a | b));
+void do_or(const instr_t *inst, regfile_t *rf) {
+  word_t a = reg_get(rf, inst->rs1);
+  word_t b = reg_get(rf, inst->rs2);
+  reg_set(rf, inst->rd, (word_t)(a | b));
 }
 
-void exec_xor(const instr_t *inst, regfile_t *rf) {
-  word_t a = regfile_read(rf, inst->rs1);
-  word_t b = regfile_read(rf, inst->rs2);
-  regfile_write(rf, inst->rd, (word_t)(a ^ b));
+void do_xor(const instr_t *inst, regfile_t *rf) {
+  word_t a = reg_get(rf, inst->rs1);
+  word_t b = reg_get(rf, inst->rs2);
+  reg_set(rf, inst->rd, (word_t)(a ^ b));
 }
 
-void exec_not(const instr_t *inst, regfile_t *rf) {
-  word_t a = regfile_read(rf, inst->rs1);
-  regfile_write(rf, inst->rd, (word_t)(~a));
+void do_not(const instr_t *inst, regfile_t *rf) {
+  word_t a = reg_get(rf, inst->rs1);
+  reg_set(rf, inst->rd, (word_t)(~a));
 }
 
-void exec_cmp(const instr_t *inst, regfile_t *rf) {
-  word_t a = regfile_read(rf, inst->rs1);
-  word_t b = regfile_read(rf, inst->rs2);
+void do_cmp(const instr_t *inst, regfile_t *rf) {
+  word_t a = reg_get(rf, inst->rs1);
+  word_t b = reg_get(rf, inst->rs2);
   if (a < b) {
-    regfile_write(rf, inst->rd, (word_t)(-1));
+    reg_set(rf, inst->rd, (word_t)(-1));
   } else if (a == b) {
-    regfile_write(rf, inst->rd, (word_t)(0));
+    reg_set(rf, inst->rd, (word_t)(0));
   } else {
-    regfile_write(rf, inst->rd, (word_t)(1));
+    reg_set(rf, inst->rd, (word_t)(1));
   }
 }
 
-void exec_shl(const instr_t *inst, regfile_t *rf) {
-  word_t a = regfile_read(rf, inst->rs1);
+void do_shl(const instr_t *inst, regfile_t *rf) {
+  word_t a = reg_get(rf, inst->rs1);
   uint32_t sh = (uint32_t)inst->imm & 31u;
-  regfile_write(rf, inst->rd, (word_t)((uint32_t)a << sh));
+  reg_set(rf, inst->rd, (word_t)((uint32_t)a << sh));
 }
 
-void exec_shr(const instr_t *inst, regfile_t *rf) {
-  word_t a = regfile_read(rf, inst->rs1);
+void do_shr(const instr_t *inst, regfile_t *rf) {
+  word_t a = reg_get(rf, inst->rs1);
   uint32_t sh = (uint32_t)inst->imm & 31u;
-  regfile_write(rf, inst->rd, (word_t)(a >> sh));
+  reg_set(rf, inst->rd, (word_t)(a >> sh));
 }
 
-void exec_instr(const instr_t *inst, regfile_t *rf, memory_t *mem) {
+void run_instr(const instr_t *inst, regfile_t *rf, memory_t *mem) {
   switch (inst->op) {
   case OP_NOP:
     break;
   case OP_LD:
-    exec_ld(inst, rf, mem);
+    do_ld(inst, rf, mem);
     break;
   case OP_LDC:
-    exec_ldc(inst, rf);
+    do_ldc(inst, rf);
     break;
   case OP_ST:
-    exec_st(inst, rf, mem);
+    do_st(inst, rf, mem);
     break;
   case OP_ADD:
-    exec_add(inst, rf);
+    do_add(inst, rf);
     break;
   case OP_ADDI:
-    exec_addi(inst, rf);
+    do_addi(inst, rf);
     break;
   case OP_SUB:
-    exec_sub(inst, rf);
+    do_sub(inst, rf);
     break;
   case OP_SUBI:
-    exec_subi(inst, rf);
+    do_subi(inst, rf);
     break;
   case OP_MUL:
-    exec_mul(inst, rf);
+    do_mul(inst, rf);
     break;
   case OP_MULI:
-    exec_muli(inst, rf);
+    do_muli(inst, rf);
     break;
   case OP_AND:
-    exec_and(inst, rf);
+    do_and(inst, rf);
     break;
   case OP_OR:
-    exec_or(inst, rf);
+    do_or(inst, rf);
     break;
   case OP_XOR:
-    exec_xor(inst, rf);
+    do_xor(inst, rf);
     break;
   case OP_NOT:
-    exec_not(inst, rf);
+    do_not(inst, rf);
     break;
   case OP_CMP:
-    exec_cmp(inst, rf);
+    do_cmp(inst, rf);
     break;
   case OP_SHR:
-    exec_shr(inst, rf);
+    do_shr(inst, rf);
     break;
   case OP_SHL:
-    exec_shl(inst, rf);
+    do_shl(inst, rf);
     break;
   default:
     printf("Unsupported opcode %d\n", inst->op);
