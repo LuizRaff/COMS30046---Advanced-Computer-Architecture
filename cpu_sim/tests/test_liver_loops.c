@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
-#include "core/cpu.h"
-#include "core/memory.h"
+#include "../src/core/cpu.h"
+#include "../src/core/memory.h"
 
 #define A_BASE 0x0000
 #define B_BASE 0x0040
@@ -12,14 +12,12 @@ int main(void) {
     cpu_t cpu;
     if (cpu_init(&cpu, 64) != 0) { printf("Failed to init CPU\n"); return 1; }
 
-    // b[i]=i+1, c[i]=i+1, a[i]=0
     for (int i = 0; i < N; i++) {
         memory_store_w(&cpu.mem, (uint32_t)(B_BASE + i*4), (word_t)(i+1));
         memory_store_w(&cpu.mem, (uint32_t)(C_BASE + i*4), (word_t)(i+1));
         memory_store_w(&cpu.mem, (uint32_t)(A_BASE + i*4), (word_t)0);
     }
 
-    // d = 3
     const instr_t program[] = {
         { .op=OP_LDC, .rd=1, .imm=A_BASE, .has_imm=true }, // r1 = &a
         { .op=OP_LDC, .rd=2, .imm=B_BASE, .has_imm=true }, // r2 = &b

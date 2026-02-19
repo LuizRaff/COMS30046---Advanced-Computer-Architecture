@@ -1,9 +1,8 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include "core/cpu.h"
-#include "core/memory.h"
-#include "core/regfile.h"
+#include "../src/core/cpu.h"
+#include "../src/core/memory.h"
 
 #define A_BASE 0x0000
 #define B_BASE 0x0040
@@ -42,7 +41,7 @@ int main(void) {
         { .op = OP_BLTH, .rs1 = 4, .rs2 = 5, .imm = 5, .has_imm = true },
     };
 
-    int r = cpu_run_dump(&cpu, program, sizeof(program)/sizeof(program[0]), 1000000, true, "pipeline_dump.txt");;
+    int r = cpu_run(&cpu, program, sizeof(program)/sizeof(program[0]), 1000000);;
     if (r == -1) {
         printf("CPU fault while running\n");
         cpu_free(&cpu);

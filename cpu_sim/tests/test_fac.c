@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
-#include "core/cpu.h"
-#include "core/regfile.h"
+#include "../src/core/cpu.h"
+#include "../src/core/regfile.h"
 
 int main(void) {
     cpu_t cpu;
@@ -13,16 +13,12 @@ int main(void) {
         { .op=OP_LDC, .rd=3, .imm=1, .has_imm=true }, // res=1
         { .op=OP_LDC, .rd=4, .imm=6, .has_imm=true }, // n+1 = 6
 
-        // loopcheck PC=4
         { .op=OP_BLTH, .rs1=2, .rs2=4, .imm=6, .has_imm=true }, // if (i<6) body
         { .op=OP_B,    .imm=9, .has_imm=true },                 // else end
 
-        // body PC=6
         { .op=OP_MUL,  .rd=3, .rs1=3, .rs2=2, .has_imm=false }, // res *= i
         { .op=OP_ADDI, .rd=2, .rs1=2, .imm=1, .has_imm=true },  // i++
         { .op=OP_B,    .imm=4, .has_imm=true },                 // back
-
-        // end PC=9
         { .op=OP_HALT }
     };
 
