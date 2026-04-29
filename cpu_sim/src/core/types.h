@@ -4,14 +4,14 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef int32_t word_t;
+typedef int32_t Word;
 
 #define NUM_REGS 32
 #define VLEN 4
 #define NUM_VREG 8
 
 typedef struct {
-  word_t e[VLEN];
-} vreg_t;
+  Word e[VLEN];
+} VectorRegister;
 
 #endif

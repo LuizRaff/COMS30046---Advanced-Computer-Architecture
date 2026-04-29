@@ -6,14 +6,14 @@
 #include <stdint.h>
 
 typedef struct {
-  word_t *words;
+  Word *words;
   size_t nwords;
-} memory_t;
+} MemoryBank;
 
-int mem_init(memory_t *m, size_t nwords);
-void mem_free(memory_t *m);
+int mem_init(MemoryBank *m, size_t nwords);
+void mem_free(MemoryBank *m);
 
-word_t mem_load(const memory_t *m, uint32_t addr_bytes);
-void mem_store(memory_t *m, uint32_t addr_bytes, word_t value);
+Word mem_load(const MemoryBank *m, uint32_t addr_bytes);
+void mem_store(MemoryBank *m, uint32_t addr_bytes, Word value);
 
 #endif

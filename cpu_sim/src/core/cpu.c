@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <string.h>
 
-/* ---- String helpers ---------------------------------------------------- */
-static const char *op_to_str(opcode_t op) {
+/* Converts an opcode enumeration value into its string representation */
+static const char *op_to_str(OpCode op) {
   switch (op) {
   case OP_NOP:
     return "nop";
@@ -63,7 +63,8 @@ static const char *op_to_str(opcode_t op) {
   }
 }
 
-void inst_to_str(char *buf, size_t n, const instr_t *inst) {
+/* Formats an instruction into a human-readable string buffer */
+void inst_to_str(char *buf, size_t n, const Instruction *inst) {
   const char *op = op_to_str(inst->op);
   switch (inst->op) {
   case OP_LD:
@@ -129,40 +130,8 @@ void inst_to_str(char *buf, size_t n, const instr_t *inst) {
   }
 }
 
-/* ---- Pipeline classification ------------------------------------------- */
-static int writes_dest(const instr_t *inst) {
-  switch (inst->op) {
-  case OP_LD:
-  case OP_LDC:
-  case OP_ADD:
-  case OP_ADDI:
-  case OP_SUB:
-  case OP_SUBI:
-  case OP_MUL:
-  case OP_MULI:
-  case OP_AND:
-  case OP_OR:
-  case OP_XOR:
-  case OP_NOT:
-  case OP_CMP:
-  case OP_SHR:
-  case OP_SHL:
-    return 1;
-  default:
-    return 0;
-  }
-}
-static int writes_vreg(const instr_t *inst) {
-  return (inst->op == OP_VLD || inst->op == OP_VADD || inst->op == OP_VMUL);
-}
-static int get_dest(const instr_t *inst) {
-  return writes_dest(inst) ? inst->rd : -1;
-}
-static int get_vdest(const instr_t *inst) {
-  return writes_vreg(inst) ? inst->rd : -1;
-}
-
-static void get_sources(const instr_t *inst, int *rs1, int *rs2) {
+/* Saves the values for rs1 and rs2 where they need to be stored inside the instruction struct */
+static void get_sources(const Instruction *inst, int *rs1, int *rs2) {
   *rs1 = -1;
   *rs2 = -1;
   switch (inst->op) {
@@ -196,7 +165,8 @@ static void get_sources(const instr_t *inst, int *rs1, int *rs2) {
   }
 }
 
-static eu_type_t get_required_eu(const instr_t *inst) {
+/* Maps an instruction to the type of execution unit it requires */
+static ExecutionUnitType get_required_eu(const Instruction *inst) {
   switch (inst->op) {
   case OP_LD:
   case OP_ST:
@@ -218,26 +188,8 @@ static eu_type_t get_required_eu(const instr_t *inst) {
   }
 }
 
-static int get_eu_latency(eu_type_t t) {
-  if (t == EU_TYPE_LSU)
-    return 2;
-  if (t == EU_TYPE_VEC)
-    return 2;
-  return 1;
-}
-
-static int has_older_store(const cpu_t *cpu, int rob_idx) {
-  int i = cpu->rob_head;
-  while (i != rob_idx) {
-    if (cpu->rob[i].valid && cpu->rob[i].type == ROB_TYPE_STORE)
-      return 1;
-    i = (i + 1) % ROB_SIZE;
-  }
-  return 0;
-}
-
-/* ---- Branch predictor -------------------------------------------------- */
-static int bp_predict(cpu_t *cpu, uint32_t pc, const instr_t *inst) {
+/* Consults the branch predictor to determine if a branch is predicted taken or not */
+static int bp_predict(Processor *cpu, uint32_t pc, const Instruction *inst) {
   int is_branch = (inst->op == OP_B || inst->op == OP_J || inst->op == OP_BLTH);
   if (!is_branch)
     return 0;
@@ -258,7 +210,8 @@ static int bp_predict(cpu_t *cpu, uint32_t pc, const instr_t *inst) {
   }
 }
 
-static void bp_update(cpu_t *cpu, uint32_t pc, int taken) {
+/* Updates the branch predictor's internal state (PHT and local history) after a branch resolves */
+static void bp_update(Processor *cpu, uint32_t pc, int taken) {
   switch (cpu->cfg.bp_type) {
   case BP_NONE:
   case BP_ALWAYS_TAKEN:
@@ -286,13 +239,13 @@ static void bp_update(cpu_t *cpu, uint32_t pc, int taken) {
   }
 }
 
-/* ---- Setup / reset / free ---------------------------------------------- */
-int setup_cpu(cpu_t *cpu, size_t mem_words, cpu_config_t cfg) {
-  memset(cpu, 0, sizeof(cpu_t));
+/* Initializes the processor structure, allocates memory, and configures execution units */
+int setup_cpu(Processor *cpu, size_t mem_words, ProcessorConfig cfg) {
+  memset(cpu, 0, sizeof(Processor));
   cpu->cfg = cfg;
   if (mem_init(&cpu->mem, mem_words) != 0)
     return -1;
-  /* Build execution units */
+
   int idx = 0;
   for (int i = 0; i < cfg.num_alus && idx < MAX_EUS; i++, idx++)
     cpu->eus[idx].type = EU_TYPE_ALU;
@@ -307,52 +260,55 @@ int setup_cpu(cpu_t *cpu, size_t mem_words, cpu_config_t cfg) {
   return 0;
 }
 
-void free_cpu(cpu_t *cpu) { mem_free(&cpu->mem); }
+/* Frees all memory associated with the processor */
+void free_cpu(Processor *cpu) { mem_free(&cpu->mem); }
 
-void reset_cpu(cpu_t *cpu) {
+/* Resets the processor pipelines, queues, structures, and metrics back to their initial state */
+void reset_cpu(Processor *cpu) {
   cpu->pc = 0;
   cpu->cycles = 0;
   cpu->instrs = 0;
   cpu->halted = 0;
-  /* BP state */
-  memset(cpu->bp_table, 1, sizeof(cpu->bp_table)); /* weakly not-taken */
+
+  memset(cpu->bp_table, 1, sizeof(cpu->bp_table));
   memset(cpu->local_hist, 0, sizeof(cpu->local_hist));
-  memset(cpu->pht, 1, sizeof(cpu->pht)); /* weakly not-taken */
-  /* IQ */
+  memset(cpu->pht, 1, sizeof(cpu->pht));
+
   memset(cpu->iq, 0, sizeof(cpu->iq));
   cpu->iq_head = 0;
   cpu->iq_tail = 0;
   cpu->iq_count = 0;
-  /* RAT */
+
   for (int i = 0; i < NUM_REGS; i++)
     cpu->rat[i] = -1;
-  /* RS, ROB */
+
   memset(cpu->rs, 0, sizeof(cpu->rs));
   memset(cpu->rob, 0, sizeof(cpu->rob));
   cpu->rob_head = 0;
   cpu->rob_tail = 0;
-  /* EUs */
+
   for (int i = 0; i < cpu->num_eus; i++) {
-    eu_type_t t = cpu->eus[i].type;
-    memset(&cpu->eus[i], 0, sizeof(exec_unit_t));
+    ExecutionUnitType t = cpu->eus[i].type;
+    memset(&cpu->eus[i], 0, sizeof(ExecutionUnit));
     cpu->eus[i].type = t;
   }
-  /* Vector regs */
+
   memset(cpu->vreg, 0, sizeof(cpu->vreg));
-  /* Metrics */
+
   cpu->total_branches = 0;
   cpu->correct_predictions = 0;
   cpu->mispredictions = 0;
   cpu->branch_flushes = 0;
   cpu->rob_full_stalls = 0;
   cpu->rs_full_stalls = 0;
-  /* Scalar regs */
+
   regs_clear(&cpu->rf);
 }
 
-/* ---- tick: one cycle of the OOO pipeline ------------------------------- */
-int tick(cpu_t *cpu, const instr_t *program, size_t program_len) {
-  /* Check termination */
+/* Executes a single clock cycle of the out-of-order processor pipeline: 
+ * Commit -> Writeback -> Schedule -> Issue -> Fetch */
+int tick(Processor *cpu, const Instruction *program, size_t program_len) {
+
   if ((cpu->halted || cpu->pc >= program_len) && cpu->iq_count == 0) {
     int active = 0;
     for (int i = 0; i < cpu->num_eus; i++)
@@ -366,11 +322,10 @@ int tick(cpu_t *cpu, const instr_t *program, size_t program_len) {
   }
   cpu->cycles++;
 
-  /* ---- Phase 1: COMMIT (in-order from ROB head) ---- */
   int flush = 0;
   uint32_t flush_pc = 0;
   for (int c = 0; c < cpu->cfg.issue_width && !flush; c++) {
-    rob_entry_t *h = &cpu->rob[cpu->rob_head];
+    ReorderBufferEntry *h = &cpu->rob[cpu->rob_head];
     if (!h->valid || !h->ready)
       break;
 
@@ -393,7 +348,6 @@ int tick(cpu_t *cpu, const instr_t *program, size_t program_len) {
     if (h->inst.op != OP_NOP)
       cpu->instrs++;
 
-    /* RAT cleanup */
     if (h->type == ROB_TYPE_REG_WRITE && h->dest_reg > 0) {
       if (cpu->rat[h->dest_reg] == cpu->rob_head)
         cpu->rat[h->dest_reg] = -1;
@@ -409,7 +363,7 @@ int tick(cpu_t *cpu, const instr_t *program, size_t program_len) {
   }
 
   if (flush) {
-    /* Flush everything younger */
+
     memset(cpu->iq, 0, sizeof(cpu->iq));
     cpu->iq_head = 0;
     cpu->iq_tail = 0;
@@ -428,7 +382,6 @@ int tick(cpu_t *cpu, const instr_t *program, size_t program_len) {
     return 0;
   }
 
-  /* ---- Phase 2: COMPLETE / WRITEBACK (CDB broadcast) ---- */
   for (int i = 0; i < cpu->num_eus; i++) {
     if (!cpu->eus[i].busy)
       continue;
@@ -436,12 +389,11 @@ int tick(cpu_t *cpu, const instr_t *program, size_t program_len) {
     if (cpu->eus[i].cycles_left > 0)
       continue;
     int dr = cpu->eus[i].dest_rob;
-    rob_entry_t *re = &cpu->rob[dr];
+    ReorderBufferEntry *re = &cpu->rob[dr];
     re->result = cpu->eus[i].result;
     if (cpu->eus[i].type == EU_TYPE_VEC) {
       memcpy(re->vec_result, cpu->eus[i].vec_result, sizeof(re->vec_result));
-      /* Eagerly write vector results so dependent vector ops read correct data
-       */
+
       if (re->dest_vreg >= 0 && re->dest_vreg < NUM_VREG) {
         memcpy(cpu->vreg[re->dest_vreg].e, re->vec_result,
                sizeof(re->vec_result));
@@ -452,7 +404,7 @@ int tick(cpu_t *cpu, const instr_t *program, size_t program_len) {
       re->correct_pc = cpu->eus[i].result_extra;
     }
     re->ready = 1;
-    /* Broadcast to RS */
+
     for (int j = 0; j < RS_SIZE; j++) {
       if (!cpu->rs[j].busy)
         continue;
@@ -468,7 +420,6 @@ int tick(cpu_t *cpu, const instr_t *program, size_t program_len) {
     cpu->eus[i].busy = 0;
   }
 
-  /* ---- Phase 3: SCHEDULE (dispatch ready RS to free EUs) ---- */
   for (int i = 0; i < cpu->num_eus; i++) {
     if (cpu->eus[i].busy)
       continue;
@@ -478,45 +429,58 @@ int tick(cpu_t *cpu, const instr_t *program, size_t program_len) {
       if (cpu->rs[j].qj != -1 || cpu->rs[j].qk != -1)
         continue;
 
-      /* Load ordering: block load if older store in ROB */
-      if (cpu->rs[j].inst.op == OP_LD &&
-          has_older_store(cpu, cpu->rs[j].dest_rob))
-        continue;
+      if (cpu->rs[j].inst.op == OP_LD) {
+        int has_st = 0;
+        int si = cpu->rob_head;
+        while (si != cpu->rs[j].dest_rob) {
+          if (cpu->rob[si].valid && cpu->rob[si].type == ROB_TYPE_STORE) {
+            has_st = 1;
+            break;
+          }
+          si = (si + 1) % ROB_SIZE;
+        }
+        if (has_st)
+          continue;
+      }
 
-      /* Vector ordering: block vector-reading ops until older vector writes
-       * complete */
-      if (cpu->rs[j].inst.op == OP_VADD || cpu->rs[j].inst.op == OP_VMUL ||
-          cpu->rs[j].inst.op == OP_VST) {
+      if (cpu->rs[j].req_eu == EU_TYPE_VEC) {
         int blocked = 0;
         int ri = cpu->rob_head;
+
         while (ri != cpu->rs[j].dest_rob) {
           if (cpu->rob[ri].valid && !cpu->rob[ri].ready &&
-              (cpu->rob[ri].type == ROB_TYPE_VEC_WRITE)) {
+              (cpu->rob[ri].type == ROB_TYPE_VEC_WRITE ||
+               cpu->rob[ri].type == ROB_TYPE_VEC_STORE)) {
             blocked = 1;
             break;
           }
+
           ri = (ri + 1) % ROB_SIZE;
         }
+
         if (blocked)
           continue;
       }
 
       cpu->eus[i].busy = 1;
-      cpu->eus[i].cycles_left = get_eu_latency(cpu->rs[j].req_eu);
+      cpu->eus[i].cycles_left =
+          (cpu->rs[j].req_eu == EU_TYPE_LSU || cpu->rs[j].req_eu == EU_TYPE_VEC)
+              ? 2
+              : 1;
       cpu->eus[i].rs_idx = j;
       cpu->eus[i].dest_rob = cpu->rs[j].dest_rob;
       cpu->eus[i].flag_extra = 0;
       memset(cpu->eus[i].vec_result, 0, sizeof(cpu->eus[i].vec_result));
 
-      instr_t *inst = &cpu->rs[j].inst;
-      word_t vj = cpu->rs[j].vj, vk = cpu->rs[j].vk, imm = cpu->rs[j].imm;
+      Instruction *inst = &cpu->rs[j].inst;
+      Word vj = cpu->rs[j].vj, vk = cpu->rs[j].vk, imm = cpu->rs[j].imm;
 
       if (cpu->eus[i].type == EU_TYPE_ALU) {
         cpu->eus[i].result = do_alu(inst->op, vj, vk, imm);
       } else if (cpu->eus[i].type == EU_TYPE_LSU) {
         if (inst->op == OP_LD) {
           cpu->eus[i].result = do_ld(vj, imm, &cpu->mem);
-        } else { /* ST */
+        } else {
           cpu->eus[i].result = vj;
           cpu->rob[cpu->rs[j].dest_rob].store_data = vk;
         }
@@ -536,7 +500,7 @@ int tick(cpu_t *cpu, const instr_t *program, size_t program_len) {
           }
         }
         cpu->eus[i].result = taken;
-        rob_entry_t *rb = &cpu->rob[cpu->rs[j].dest_rob];
+        ReorderBufferEntry *rb = &cpu->rob[cpu->rs[j].dest_rob];
         cpu->total_branches++;
         if (rb->branch_taken != taken || (taken && rb->correct_pc != tpc)) {
           cpu->mispredictions++;
@@ -547,20 +511,20 @@ int tick(cpu_t *cpu, const instr_t *program, size_t program_len) {
         }
         bp_update(cpu, cpu->rs[j].pc, taken);
       } else if (cpu->eus[i].type == EU_TYPE_VEC) {
-        rob_entry_t *rb = &cpu->rob[cpu->rs[j].dest_rob];
+        ReorderBufferEntry *rb = &cpu->rob[cpu->rs[j].dest_rob];
         if (inst->op == OP_VLD) {
           uint32_t addr = addr_of(vj, imm);
           for (int v = 0; v < VLEN; v++)
             cpu->eus[i].vec_result[v] = mem_load(&cpu->mem, addr + v * 4);
         } else if (inst->op == OP_VST) {
-          cpu->eus[i].result = vj; /* base addr */
+          cpu->eus[i].result = vj;
           int vs = inst->rs2;
           if (vs >= 0 && vs < NUM_VREG)
             memcpy(cpu->eus[i].vec_result, cpu->vreg[vs].e,
                    sizeof(cpu->eus[i].vec_result));
         } else if (inst->op == OP_VADD || inst->op == OP_VMUL) {
           int vs1 = inst->rs1, vs2 = inst->rs2;
-          word_t a[VLEN] = {0}, b[VLEN] = {0};
+          Word a[VLEN] = {0}, b[VLEN] = {0};
           if (vs1 >= 0 && vs1 < NUM_VREG)
             memcpy(a, cpu->vreg[vs1].e, sizeof(a));
           if (vs2 >= 0 && vs2 < NUM_VREG)
@@ -577,21 +541,18 @@ int tick(cpu_t *cpu, const instr_t *program, size_t program_len) {
     }
   }
 
-  /* ---- Phase 4: ISSUE (from IQ into ROB + RS) ---- */
   for (int c = 0; c < cpu->cfg.issue_width && cpu->iq_count > 0; c++) {
-    iq_entry_t *iqe = &cpu->iq[cpu->iq_head];
+    FetchQueueItem *iqe = &cpu->iq[cpu->iq_head];
     if (!iqe->valid)
       break;
-    instr_t *inst = &iqe->inst;
-    eu_type_t eu = get_required_eu(inst);
+    Instruction *inst = &iqe->inst;
+    ExecutionUnitType eu = get_required_eu(inst);
 
-    /* Check ROB space */
     if (cpu->rob[cpu->rob_tail].valid) {
       cpu->rob_full_stalls++;
       break;
     }
 
-    /* Check RS space (not needed for NOP/HALT) */
     int free_rs = -1;
     if (eu != EU_TYPE_NONE) {
       for (int i = 0; i < RS_SIZE; i++)
@@ -606,8 +567,8 @@ int tick(cpu_t *cpu, const instr_t *program, size_t program_len) {
     }
 
     int dest = cpu->rob_tail;
-    rob_entry_t *re = &cpu->rob[dest];
-    memset(re, 0, sizeof(rob_entry_t));
+    ReorderBufferEntry *re = &cpu->rob[dest];
+    memset(re, 0, sizeof(ReorderBufferEntry));
     re->valid = 1;
     re->inst = *inst;
     re->pc = iqe->pc;
@@ -619,8 +580,32 @@ int tick(cpu_t *cpu, const instr_t *program, size_t program_len) {
       re->type = (inst->op == OP_HALT) ? ROB_TYPE_HALT : ROB_TYPE_NOP;
     } else {
       re->ready = 0;
-      re->dest_reg = get_dest(inst);
-      re->dest_vreg = get_vdest(inst);
+      switch (inst->op) {
+      case OP_LD:
+      case OP_LDC:
+      case OP_ADD:
+      case OP_ADDI:
+      case OP_SUB:
+      case OP_SUBI:
+      case OP_MUL:
+      case OP_MULI:
+      case OP_AND:
+      case OP_OR:
+      case OP_XOR:
+      case OP_NOT:
+      case OP_CMP:
+      case OP_SHR:
+      case OP_SHL:
+        re->dest_reg = inst->rd;
+        break;
+      case OP_VLD:
+      case OP_VADD:
+      case OP_VMUL:
+        re->dest_vreg = inst->rd;
+        break;
+      default:
+        break;
+      }
 
       if (eu == EU_TYPE_BRU) {
         re->type = ROB_TYPE_BRANCH;
@@ -630,17 +615,17 @@ int tick(cpu_t *cpu, const instr_t *program, size_t program_len) {
         re->type = ROB_TYPE_STORE;
       } else if (inst->op == OP_VST) {
         re->type = ROB_TYPE_VEC_STORE;
-      } else if (writes_vreg(inst)) {
+      } else if (inst->op == OP_VLD || inst->op == OP_VADD ||
+                 inst->op == OP_VMUL) {
         re->type = ROB_TYPE_VEC_WRITE;
       } else {
         re->type = ROB_TYPE_REG_WRITE;
       }
 
-      /* Fill RS */
       int rs1, rs2;
       get_sources(inst, &rs1, &rs2);
-      rs_entry_t *rse = &cpu->rs[free_rs];
-      memset(rse, 0, sizeof(rs_entry_t));
+      ReservationStation *rse = &cpu->rs[free_rs];
+      memset(rse, 0, sizeof(ReservationStation));
       rse->busy = 1;
       rse->inst = *inst;
       rse->pc = iqe->pc;
@@ -648,7 +633,6 @@ int tick(cpu_t *cpu, const instr_t *program, size_t program_len) {
       rse->imm = inst->imm;
       rse->dest_rob = dest;
 
-      /* Operand 1 */
       if (rs1 <= 0) {
         rse->qj = -1;
         rse->vj = 0;
@@ -664,15 +648,13 @@ int tick(cpu_t *cpu, const instr_t *program, size_t program_len) {
         rse->vj = reg_get(&cpu->rf, rs1);
       }
 
-      /* Operand 2 */
       if (rs2 <= 0) {
         rse->qk = -1;
         rse->vk = 0;
       } else if (eu == EU_TYPE_VEC) {
         rse->qk = -1;
         rse->vk = 0;
-      } /* vec ops use vreg directly */
-      else if (cpu->rat[rs2] != -1) {
+      } else if (cpu->rat[rs2] != -1) {
         int q = cpu->rat[rs2];
         if (cpu->rob[q].ready) {
           rse->qk = -1;
@@ -684,7 +666,6 @@ int tick(cpu_t *cpu, const instr_t *program, size_t program_len) {
         rse->vk = reg_get(&cpu->rf, rs2);
       }
 
-      /* For ST: rs2 is the data register, need its value */
       if (inst->op == OP_ST && rs2 > 0) {
         if (cpu->rat[rs2] != -1) {
           int q = cpu->rat[rs2];
@@ -699,7 +680,6 @@ int tick(cpu_t *cpu, const instr_t *program, size_t program_len) {
         }
       }
 
-      /* Update RAT for scalar dest */
       if (re->dest_reg > 0)
         cpu->rat[re->dest_reg] = dest;
     }
@@ -710,12 +690,11 @@ int tick(cpu_t *cpu, const instr_t *program, size_t program_len) {
     cpu->iq_count--;
   }
 
-  /* ---- Phase 5: FETCH (into IQ) ---- */
   for (int c = 0;
        c < cpu->cfg.issue_width && !cpu->halted && cpu->pc < program_len; c++) {
     if (cpu->iq_count >= IQ_SIZE)
       break;
-    iq_entry_t *iqe = &cpu->iq[cpu->iq_tail];
+    FetchQueueItem *iqe = &cpu->iq[cpu->iq_tail];
     iqe->inst = program[cpu->pc];
     iqe->pc = cpu->pc;
     iqe->valid = 1;
@@ -739,8 +718,8 @@ int tick(cpu_t *cpu, const instr_t *program, size_t program_len) {
   return 0;
 }
 
-/* ---- Stats ------------------------------------------------------------- */
-static const char *bp_name(bp_type_t t) {
+/* Returns a human-readable name for the branch predictor type */
+static const char *bp_name(BranchPredictorType t) {
   switch (t) {
   case BP_NONE:
     return "none";
@@ -755,7 +734,8 @@ static const char *bp_name(bp_type_t t) {
   }
 }
 
-void print_stats(const cpu_t *cpu) {
+/* Prints performance statistics and metrics for the simulation run */
+void print_stats(const Processor *cpu) {
   double ipc = cpu->cycles ? (double)cpu->instrs / cpu->cycles : 0.0;
   double acc = cpu->total_branches
                    ? 100.0 * cpu->correct_predictions / cpu->total_branches
@@ -781,7 +761,8 @@ void print_stats(const cpu_t *cpu) {
   printf("==========================\n");
 }
 
-int run_program(cpu_t *cpu, const instr_t *program, size_t program_len,
+/* Runs the simulator continuously until the program halts or the maximum number of steps is reached */
+int run_program(Processor *cpu, const Instruction *program, size_t program_len,
                 uint64_t max_steps) {
   for (uint64_t s = 0; s < max_steps; s++) {
     int r = tick(cpu, program, program_len);

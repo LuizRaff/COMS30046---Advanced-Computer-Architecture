@@ -4,11 +4,11 @@
 #include "types.h"
 
 typedef struct {
-  word_t r[NUM_REGS];
-} regfile_t;
+  Word r[NUM_REGS];
+} RegisterFile;
 
-void regs_clear(regfile_t *rf);
-word_t reg_get(const regfile_t *rf, int idx);
-void reg_set(regfile_t *rf, int idx, word_t value);
+void regs_clear(RegisterFile *rf);
+Word reg_get(const RegisterFile *rf, int idx);
+void reg_set(RegisterFile *rf, int idx, Word value);
 
 #endif

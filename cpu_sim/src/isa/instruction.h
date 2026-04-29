@@ -5,12 +5,12 @@
 #include "opcode.h"
 
 typedef struct {
-  opcode_t op;
+  OpCode op;
   int rd;
   int rs1;
   int rs2;
-  word_t imm;
+  Word imm;
   bool has_imm;
-} instr_t;
+} Instruction;
 
-#endif // ISA_INSTRUCTION_H
+#endif 

@@ -1,18 +1,21 @@
 #include "regfile.h"
 #include <string.h>
 
-void regs_clear(regfile_t *rf) {
+/* Clears all general-purpose registers, resetting them to zero */
+void regs_clear(RegisterFile *rf) {
   memset(rf->r, 0, sizeof(rf->r));
   rf->r[0] = 0;
 }
 
-word_t reg_get(const regfile_t *rf, int idx) {
+/* Returns the value of the register at the specified index, yielding 0 if invalid */
+Word reg_get(const RegisterFile *rf, int idx) {
   if (idx < 0 || idx >= NUM_REGS)
     return 0;
   return rf->r[idx];
 }
 
-void reg_set(regfile_t *rf, int idx, word_t value) {
+/* Sets the value of the register at the specified index, preventing writes to register 0 */
+void reg_set(RegisterFile *rf, int idx, Word value) {
   if (idx <= 0 || idx >= NUM_REGS)
     return;
   rf->r[idx] = value;

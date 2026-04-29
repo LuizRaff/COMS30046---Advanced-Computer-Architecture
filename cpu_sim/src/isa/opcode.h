@@ -32,11 +32,11 @@ typedef enum {
 
   OP_HALT,
 
-  /* Vector integer instructions */
-  OP_VLD,  /* VLD  vd, [rbase + imm]  — load VLEN ints  */
-  OP_VST,  /* VST  vs, [rbase + imm]  — store VLEN ints */
-  OP_VADD, /* VADD vd, vs1, vs2       — element-wise add */
-  OP_VMUL  /* VMUL vd, vs1, vs2       — element-wise mul */
-} opcode_t;
+  
+  OP_VLD,  
+  OP_VST,  
+  OP_VADD, 
+  OP_VMUL  
+} OpCode;
 
-#endif // ISA_OPCODE_H
+#endif 
