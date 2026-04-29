@@ -130,7 +130,8 @@ void inst_to_str(char *buf, size_t n, const Instruction *inst) {
   }
 }
 
-/* Saves the values for rs1 and rs2 where they need to be stored inside the instruction struct */
+/* Saves the values for rs1 and rs2 where they need to be stored inside the
+ * instruction struct */
 static void get_sources(const Instruction *inst, int *rs1, int *rs2) {
   *rs1 = -1;
   *rs2 = -1;
@@ -188,7 +189,8 @@ static ExecutionUnitType get_required_eu(const Instruction *inst) {
   }
 }
 
-/* Consults the branch predictor to determine if a branch is predicted taken or not */
+/* Consults the branch predictor to determine if a branch is predicted taken or
+ * not */
 static int bp_predict(Processor *cpu, uint32_t pc, const Instruction *inst) {
   int is_branch = (inst->op == OP_B || inst->op == OP_J || inst->op == OP_BLTH);
   if (!is_branch)
@@ -210,7 +212,8 @@ static int bp_predict(Processor *cpu, uint32_t pc, const Instruction *inst) {
   }
 }
 
-/* Updates the branch predictor's internal state (PHT and local history) after a branch resolves */
+/* Updates the branch predictor's internal state (PHT and local history) after a
+ * branch resolves */
 static void bp_update(Processor *cpu, uint32_t pc, int taken) {
   switch (cpu->cfg.bp_type) {
   case BP_NONE:
@@ -239,7 +242,8 @@ static void bp_update(Processor *cpu, uint32_t pc, int taken) {
   }
 }
 
-/* Initializes the processor structure, allocates memory, and configures execution units */
+/* Initializes the processor structure, allocates memory, and configures
+ * execution units */
 int setup_cpu(Processor *cpu, size_t mem_words, ProcessorConfig cfg) {
   memset(cpu, 0, sizeof(Processor));
   cpu->cfg = cfg;
@@ -263,7 +267,8 @@ int setup_cpu(Processor *cpu, size_t mem_words, ProcessorConfig cfg) {
 /* Frees all memory associated with the processor */
 void free_cpu(Processor *cpu) { mem_free(&cpu->mem); }
 
-/* Resets the processor pipelines, queues, structures, and metrics back to their initial state */
+/* Resets the processor pipelines, queues, structures, and metrics back to their
+ * initial state */
 void reset_cpu(Processor *cpu) {
   cpu->pc = 0;
   cpu->cycles = 0;
@@ -305,7 +310,7 @@ void reset_cpu(Processor *cpu) {
   regs_clear(&cpu->rf);
 }
 
-/* Executes a single clock cycle of the out-of-order processor pipeline: 
+/* Executes a single clock cycle of the out-of-order processor pipeline:
  * Commit -> Writeback -> Schedule -> Issue -> Fetch */
 int tick(Processor *cpu, const Instruction *program, size_t program_len) {
 
@@ -761,7 +766,8 @@ void print_stats(const Processor *cpu) {
   printf("==========================\n");
 }
 
-/* Runs the simulator continuously until the program halts or the maximum number of steps is reached */
+/* Runs the simulator continuously until the program halts or the maximum number
+ * of steps is reached */
 int run_program(Processor *cpu, const Instruction *program, size_t program_len,
                 uint64_t max_steps) {
   for (uint64_t s = 0; s < max_steps; s++) {

@@ -6,7 +6,6 @@
 #include "core/cpu.h"
 #include "core/memory.h"
 
-
 #define A_BASE 0x0000
 #define B_BASE 0x0100
 #define C_BASE 0x0200
@@ -16,8 +15,8 @@
 static size_t bm_independent_alu(Instruction *p) {
   int n = 0;
   for (int i = 1; i <= 20; i++)
-    p[n++] =
-        (Instruction){.op = OP_ADDI, .rd = i, .rs1 = 0, .imm = i, .has_imm = true};
+    p[n++] = (Instruction){
+        .op = OP_ADDI, .rd = i, .rs1 = 0, .imm = i, .has_imm = true};
   p[n++] = (Instruction){.op = OP_HALT};
   return n;
 }
@@ -27,8 +26,8 @@ static size_t bm_dependent_alu(Instruction *p) {
   int n = 0;
   p[n++] = (Instruction){.op = OP_LDC, .rd = 1, .imm = 0, .has_imm = true};
   for (int i = 0; i < 30; i++)
-    p[n++] =
-        (Instruction){.op = OP_ADDI, .rd = 1, .rs1 = 1, .imm = 1, .has_imm = true};
+    p[n++] = (Instruction){
+        .op = OP_ADDI, .rd = 1, .rs1 = 1, .imm = 1, .has_imm = true};
   p[n++] = (Instruction){.op = OP_HALT};
   return n;
 }
@@ -36,58 +35,38 @@ static size_t bm_dependent_alu(Instruction *p) {
 /* Populates the instruction array with a simple branch loop */
 static size_t bm_branch_loop(Instruction *p) {
   int n = 0;
-  p[n++] =
-      (Instruction){.op = OP_LDC, .rd = 1, .imm = 0, .has_imm = true}; 
+  p[n++] = (Instruction){.op = OP_LDC, .rd = 1, .imm = 0, .has_imm = true};
+  p[n++] = (Instruction){.op = OP_LDC, .rd = 2, .imm = 20, .has_imm = true};
+
   p[n++] = (Instruction){
-      .op = OP_LDC, .rd = 2, .imm = 20, .has_imm = true}; 
-  
+      .op = OP_ADDI, .rd = 1, .rs1 = 1, .imm = 1, .has_imm = true};
   p[n++] = (Instruction){
-      .op = OP_ADDI, .rd = 1, .rs1 = 1, .imm = 1, .has_imm = true}; 
-  p[n++] = (Instruction){.op = OP_BLTH,
-                     .rs1 = 1,
-                     .rs2 = 2,
-                     .imm = 2,
-                     .has_imm = true}; 
+      .op = OP_BLTH, .rs1 = 1, .rs2 = 2, .imm = 2, .has_imm = true};
   p[n++] = (Instruction){.op = OP_HALT};
   return n;
 }
 
 /* Populates the instruction array with a complex alternating branch pattern */
 static size_t bm_branch_pattern(Instruction *p) {
-  
+
   int n = 0;
-  p[n++] =
-      (Instruction){.op = OP_LDC, .rd = 1, .imm = 0, .has_imm = true}; 
+  p[n++] = (Instruction){.op = OP_LDC, .rd = 1, .imm = 0, .has_imm = true};
+  p[n++] = (Instruction){.op = OP_LDC, .rd = 2, .imm = 30, .has_imm = true};
+  p[n++] = (Instruction){.op = OP_LDC, .rd = 3, .imm = 2, .has_imm = true};
+
   p[n++] = (Instruction){
-      .op = OP_LDC, .rd = 2, .imm = 30, .has_imm = true}; 
+      .op = OP_AND, .rd = 4, .rs1 = 1, .rs2 = 3, .has_imm = false};
   p[n++] = (Instruction){
-      .op = OP_LDC, .rd = 3, .imm = 2, .has_imm = true}; 
-  
+      .op = OP_BLTH, .rs1 = 0, .rs2 = 4, .imm = 6, .has_imm = true};
   p[n++] = (Instruction){
-      .op = OP_AND, .rd = 4, .rs1 = 1, .rs2 = 3, .has_imm = false}; 
-  p[n++] = (Instruction){.op = OP_BLTH,
-                     .rs1 = 0,
-                     .rs2 = 4,
-                     .imm = 6,
-                     .has_imm = true}; 
-  p[n++] = (Instruction){.op = OP_ADDI,
-                     .rd = 5,
-                     .rs1 = 5,
-                     .imm = 1,
-                     .has_imm = true}; 
-  
-  p[n++] = (Instruction){.op = OP_ADDI,
-                     .rd = 6,
-                     .rs1 = 6,
-                     .imm = 1,
-                     .has_imm = true}; 
+      .op = OP_ADDI, .rd = 5, .rs1 = 5, .imm = 1, .has_imm = true};
+
   p[n++] = (Instruction){
-      .op = OP_ADDI, .rd = 1, .rs1 = 1, .imm = 1, .has_imm = true}; 
-  p[n++] = (Instruction){.op = OP_BLTH,
-                     .rs1 = 1,
-                     .rs2 = 2,
-                     .imm = 3,
-                     .has_imm = true}; 
+      .op = OP_ADDI, .rd = 6, .rs1 = 6, .imm = 1, .has_imm = true};
+  p[n++] = (Instruction){
+      .op = OP_ADDI, .rd = 1, .rs1 = 1, .imm = 1, .has_imm = true};
+  p[n++] = (Instruction){
+      .op = OP_BLTH, .rs1 = 1, .rs2 = 2, .imm = 3, .has_imm = true};
   p[n++] = (Instruction){.op = OP_HALT};
   return n;
 }
@@ -108,26 +87,27 @@ static size_t bm_scalar_vector_add(Instruction *p) {
   p[n++] = (Instruction){.op = OP_LDC, .rd = 2, .imm = B_BASE, .has_imm = true};
   p[n++] = (Instruction){.op = OP_LDC, .rd = 3, .imm = C_BASE, .has_imm = true};
   p[n++] = (Instruction){.op = OP_LDC, .rd = 4, .imm = 0, .has_imm = true};
-  p[n++] = (Instruction){.op = OP_LDC, .rd = 5, .imm = ARRAY_N, .has_imm = true};
-  
+  p[n++] =
+      (Instruction){.op = OP_LDC, .rd = 5, .imm = ARRAY_N, .has_imm = true};
+
+  p[n++] =
+      (Instruction){.op = OP_LD, .rd = 7, .rs1 = 2, .imm = 0, .has_imm = true};
+  p[n++] =
+      (Instruction){.op = OP_LD, .rd = 8, .rs1 = 3, .imm = 0, .has_imm = true};
   p[n++] = (Instruction){
-      .op = OP_LD, .rd = 7, .rs1 = 2, .imm = 0, .has_imm = true}; 
+      .op = OP_ADD, .rd = 9, .rs1 = 7, .rs2 = 8, .has_imm = false};
+  p[n++] =
+      (Instruction){.op = OP_ST, .rs1 = 1, .rs2 = 9, .imm = 0, .has_imm = true};
   p[n++] = (Instruction){
-      .op = OP_LD, .rd = 8, .rs1 = 3, .imm = 0, .has_imm = true}; 
+      .op = OP_ADDI, .rd = 1, .rs1 = 1, .imm = 4, .has_imm = true};
   p[n++] = (Instruction){
-      .op = OP_ADD, .rd = 9, .rs1 = 7, .rs2 = 8, .has_imm = false}; 
+      .op = OP_ADDI, .rd = 2, .rs1 = 2, .imm = 4, .has_imm = true};
   p[n++] = (Instruction){
-      .op = OP_ST, .rs1 = 1, .rs2 = 9, .imm = 0, .has_imm = true}; 
-  p[n++] =
-      (Instruction){.op = OP_ADDI, .rd = 1, .rs1 = 1, .imm = 4, .has_imm = true};
-  p[n++] =
-      (Instruction){.op = OP_ADDI, .rd = 2, .rs1 = 2, .imm = 4, .has_imm = true};
-  p[n++] =
-      (Instruction){.op = OP_ADDI, .rd = 3, .rs1 = 3, .imm = 4, .has_imm = true};
-  p[n++] =
-      (Instruction){.op = OP_ADDI, .rd = 4, .rs1 = 4, .imm = 1, .has_imm = true};
-  p[n++] =
-      (Instruction){.op = OP_BLTH, .rs1 = 4, .rs2 = 5, .imm = 5, .has_imm = true};
+      .op = OP_ADDI, .rd = 3, .rs1 = 3, .imm = 4, .has_imm = true};
+  p[n++] = (Instruction){
+      .op = OP_ADDI, .rd = 4, .rs1 = 4, .imm = 1, .has_imm = true};
+  p[n++] = (Instruction){
+      .op = OP_BLTH, .rs1 = 4, .rs2 = 5, .imm = 5, .has_imm = true};
   p[n++] = (Instruction){.op = OP_HALT};
   return n;
 }
@@ -139,45 +119,31 @@ static size_t bm_vectorized_vector_add(Instruction *p) {
   p[n++] = (Instruction){.op = OP_LDC, .rd = 2, .imm = B_BASE, .has_imm = true};
   p[n++] = (Instruction){.op = OP_LDC, .rd = 3, .imm = C_BASE, .has_imm = true};
   p[n++] = (Instruction){.op = OP_LDC, .rd = 4, .imm = 0, .has_imm = true};
+  p[n++] = (Instruction){
+      .op = OP_LDC, .rd = 5, .imm = ARRAY_N / VLEN, .has_imm = true};
+
   p[n++] =
-      (Instruction){.op = OP_LDC, .rd = 5, .imm = ARRAY_N / VLEN, .has_imm = true};
-  
-  p[n++] = (Instruction){.op = OP_VLD,
-                     .rd = 0,
-                     .rs1 = 2,
-                     .imm = 0,
-                     .has_imm = true}; 
-  p[n++] = (Instruction){.op = OP_VLD,
-                     .rd = 1,
-                     .rs1 = 3,
-                     .imm = 0,
-                     .has_imm = true}; 
-  p[n++] = (Instruction){.op = OP_VADD,
-                     .rd = 2,
-                     .rs1 = 0,
-                     .rs2 = 1,
-                     .has_imm = false}; 
+      (Instruction){.op = OP_VLD, .rd = 0, .rs1 = 2, .imm = 0, .has_imm = true};
   p[n++] =
-      (Instruction){.op = OP_VST,
-                .rs1 = 1,
-                .rs2 = 2,
-                .imm = 0,
-                .has_imm = true}; 
-  
+      (Instruction){.op = OP_VLD, .rd = 1, .rs1 = 3, .imm = 0, .has_imm = true};
+  p[n++] = (Instruction){
+      .op = OP_VADD, .rd = 2, .rs1 = 0, .rs2 = 1, .has_imm = false};
+  p[n++] = (Instruction){
+      .op = OP_VST, .rs1 = 1, .rs2 = 2, .imm = 0, .has_imm = true};
+
   p[n++] = (Instruction){
       .op = OP_ADDI, .rd = 1, .rs1 = 1, .imm = VLEN * 4, .has_imm = true};
   p[n++] = (Instruction){
       .op = OP_ADDI, .rd = 2, .rs1 = 2, .imm = VLEN * 4, .has_imm = true};
   p[n++] = (Instruction){
       .op = OP_ADDI, .rd = 3, .rs1 = 3, .imm = VLEN * 4, .has_imm = true};
-  p[n++] =
-      (Instruction){.op = OP_ADDI, .rd = 4, .rs1 = 4, .imm = 1, .has_imm = true};
-  p[n++] =
-      (Instruction){.op = OP_BLTH, .rs1 = 4, .rs2 = 5, .imm = 5, .has_imm = true};
+  p[n++] = (Instruction){
+      .op = OP_ADDI, .rd = 4, .rs1 = 4, .imm = 1, .has_imm = true};
+  p[n++] = (Instruction){
+      .op = OP_BLTH, .rs1 = 4, .rs2 = 5, .imm = 5, .has_imm = true};
   p[n++] = (Instruction){.op = OP_HALT};
   return n;
 }
-
 
 /* Prints the correct CLI usage instructions */
 static void usage(void) {
@@ -189,7 +155,8 @@ static void usage(void) {
   printf("BP modes: none, always, two-bit, two-level\n");
 }
 
-/* Main entry point: parses arguments, initializes the CPU, and runs the requested benchmark */
+/* Main entry point: parses arguments, initializes the CPU, and runs the
+ * requested benchmark */
 int main(int argc, char **argv) {
   const char *benchmark = NULL;
   BranchPredictorType bp = BP_TWO_BIT;
@@ -228,12 +195,12 @@ int main(int argc, char **argv) {
 
   int need_vec = (strcmp(benchmark, "vectorized_vector_add") == 0);
   ProcessorConfig cfg = {.issue_width = issue_width,
-                      .num_alus = num_alus,
-                      .num_lsus = 1,
-                      .num_brus = 1,
-                      .num_vec = need_vec ? 1 : 0,
-                      .bp_type = bp,
-                      .benchmark_name = benchmark};
+                         .num_alus = num_alus,
+                         .num_lsus = 1,
+                         .num_brus = 1,
+                         .num_vec = need_vec ? 1 : 0,
+                         .bp_type = bp,
+                         .benchmark_name = benchmark};
 
   Processor cpu;
   if (setup_cpu(&cpu, 256, cfg) != 0) {
@@ -280,7 +247,6 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  
   if (needs_arrays) {
     int pass = 1;
     for (int i = 0; i < ARRAY_N; i++) {

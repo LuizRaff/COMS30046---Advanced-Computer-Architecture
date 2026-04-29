@@ -32,11 +32,10 @@ typedef enum {
 
   OP_HALT,
 
-  
-  OP_VLD,  
-  OP_VST,  
-  OP_VADD, 
-  OP_VMUL  
+  OP_VLD,
+  OP_VST,
+  OP_VADD,
+  OP_VMUL
 } OpCode;
 
-#endif 
+#endif

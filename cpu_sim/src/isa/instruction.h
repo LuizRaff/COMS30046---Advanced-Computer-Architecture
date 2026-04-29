@@ -13,4 +13,4 @@ typedef struct {
   bool has_imm;
 } Instruction;
 
-#endif 
+#endif
