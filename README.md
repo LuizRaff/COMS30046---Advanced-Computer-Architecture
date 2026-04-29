@@ -15,7 +15,20 @@ The goal of this CPU is not to provide a realistic model of any commercial CPU. 
 
 ---
 
-## 1. Build and Run
+## 1. Design Decisions and Development Process
+
+I first implemented the in-order simulator, then added reservation stations and the ROB. The hardest part of the implementation was ensuring that register renaming worked correctly after branch mispredictions. I chose a conservative memory model to simplify the implementation relative to a full load/store queue implementation.
+
+| Feature     | Design choice                  | Reason                            | Limitation                |
+| ----------- | ------------------------------ | --------------------------------- | ------------------------- |
+| ROB         | In-order commit                | Keeps architectural state precise | Flush logic is simplified |
+| RAT         | Maps registers to ROB entries  | Handles RAW dependencies          | No checkpointing          |
+| Memory      | Loads wait behind older stores | Avoids incorrect ordering         | Conservative performance  |
+| Vector unit | No vector renaming             | Simpler correctness               | Less realistic            |
+
+---
+
+## 2. Build and Run
 
 Everything needs to be run/compiled inside 'cpu_sim' directory.
 
@@ -52,7 +65,7 @@ make test-all
 
 ---
 
-## 2. Configuration Options
+## 3. Configuration Options
 
 The simulator accepts the following command-line options:
 
@@ -101,7 +114,7 @@ Example:
 
 ---
 
-## 3. Processor Model
+## 4. Processor Model
 
 The features of the processor within the simulator are the following:
 
@@ -127,7 +140,7 @@ The execution flow for the simulator is:
 
 ---
 
-## 4. Experiment 1: Branch Prediction
+## 5. Experiment 1: Branch Prediction
 
 ### Hypothesis
 
@@ -156,7 +169,7 @@ For the branch_loop benchmark, the always predictor is the best. This is because
 
 ---
 
-## 5. Experiment 2: Superscalar Scaling
+## 6. Experiment 2: Superscalar Scaling
 
 ### Hypothesis
 
@@ -190,7 +203,30 @@ The independent benchmark will scale well with increasing issue width and number
 
 ---
 
-## 6. Output Metrics
+## 7. Experiment 3: Vector Unit
+
+### Hypothesis
+
+Vector instructions should reduce the number of committed instructions and total cycles required to execute a data-parallel workload, since each vector instruction can operate on four integers at once.
+
+### Command
+
+make test-vector
+
+### Result
+
+| Benchmark             | Correctness | Cycles | Instructions committed |  IPC |
+| --------------------- | ----------- | -----: | ---------------------: | ---: |
+| scalar_vector_add     | PASS        |    143 |                    150 | 1.05 |
+| vectorized_vector_add | PASS        |     49 |                     42 | 0.86 |
+
+### Interpretation
+
+The vectorized version takes fewer cycles due to four integer additions performed by each vector instruction. Although the IPC is lower, this does not mean that the version is slower. The metric of interest here is the total number of cycles taken, as each vector instruction performs more work per committed instruction.
+
+---
+
+## 8. Output Metrics
 
 Each run prints a metrics block like this:
 
@@ -216,7 +252,7 @@ RS full stalls:      0
 
 ---
 
-## 7. Known Limitations
+## 8. Known Limitations
 
 The simulator is intentionally simple with a few features removed or simplified:
 
