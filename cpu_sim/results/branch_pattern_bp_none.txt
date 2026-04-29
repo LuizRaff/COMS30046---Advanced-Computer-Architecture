@@ -1,0 +1,18 @@
+
+=== Simulation Results ===
+Benchmark:           branch_pattern
+Branch predictor:    none
+Issue width:         2
+ALUs:                2
+Vector unit:         disabled
+Cycles:              298
+Instructions committed: 170
+IPC:                 0.57
+Branches:            60
+Correct predictions: 17
+Mispredictions:      43
+Branch accuracy:     28.33%
+Branch flushes:      43
+ROB full stalls:     0
+RS full stalls:      0
+==========================

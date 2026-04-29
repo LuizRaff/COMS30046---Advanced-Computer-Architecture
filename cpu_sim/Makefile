@@ -14,8 +14,8 @@ MOUT=main
 TOUT=test
 
 all: clean-main compile-main
-	./$(MOUT)
 
+clean: clean-all
 compile-main:
 	$(CC) $(CFLAGS) $(MMAIN) $(SRC) -o $(MOUT)
 
@@ -31,6 +31,9 @@ clean-test:
 
 test: clean-test compile-test
 	./$(TOUT)
+
+run-demo: compile-main
+	./$(MOUT) --benchmark=independent_alu --issue-width=2 --alus=2
 
 .SILENT:
 test-all:

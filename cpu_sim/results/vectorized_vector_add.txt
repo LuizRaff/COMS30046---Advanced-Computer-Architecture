@@ -1,0 +1,27 @@
+FAIL: A[8]=9 expected 18
+FAIL: A[9]=10 expected 20
+FAIL: A[10]=11 expected 22
+FAIL: A[11]=12 expected 24
+FAIL: A[12]=18 expected 26
+FAIL: A[13]=20 expected 28
+FAIL: A[14]=22 expected 30
+FAIL: A[15]=24 expected 32
+Array result: FAIL
+
+=== Simulation Results ===
+Benchmark:           vectorized_vector_add
+Branch predictor:    two-bit
+Issue width:         2
+ALUs:                2
+Vector unit:         enabled
+Cycles:              56
+Instructions committed: 42
+IPC:                 0.75
+Branches:            6
+Correct predictions: 3
+Mispredictions:      3
+Branch accuracy:     50.00%
+Branch flushes:      2
+ROB full stalls:     7
+RS full stalls:      0
+==========================

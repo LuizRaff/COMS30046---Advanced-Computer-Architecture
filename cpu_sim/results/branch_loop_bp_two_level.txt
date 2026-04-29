@@ -1,0 +1,18 @@
+
+=== Simulation Results ===
+Benchmark:           branch_loop
+Branch predictor:    two-level-local
+Issue width:         2
+ALUs:                2
+Vector unit:         disabled
+Cycles:              54
+Instructions committed: 43
+IPC:                 0.80
+Branches:            21
+Correct predictions: 14
+Mispredictions:      7
+Branch accuracy:     66.67%
+Branch flushes:      6
+ROB full stalls:     0
+RS full stalls:      0
+==========================

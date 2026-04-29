@@ -1,0 +1,18 @@
+
+=== Simulation Results ===
+Benchmark:           independent_alu
+Branch predictor:    two-bit
+Issue width:         1
+ALUs:                1
+Vector unit:         disabled
+Cycles:              25
+Instructions committed: 21
+IPC:                 0.84
+Branches:            0
+Correct predictions: 0
+Mispredictions:      0
+Branch accuracy:     0.00%
+Branch flushes:      0
+ROB full stalls:     0
+RS full stalls:      0
+==========================
