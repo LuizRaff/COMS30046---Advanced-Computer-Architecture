@@ -2,7 +2,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 
-/* Calculates a memory address from a base and an immediate offset, preventing overflow */
+/* Calculates memory address from base and an immediate offset */
 uint32_t addr_of(Word base, Word imm) {
   int64_t b = (int64_t)(uint32_t)base;
   int64_t off = (int64_t)imm;
@@ -16,7 +16,7 @@ uint32_t addr_of(Word base, Word imm) {
   return (uint32_t)addr;
 }
 
-/* Executes an Arithmetic Logic Unit operation given the opcode and operands */
+/* ALU operations */
 Word do_alu(OpCode op, Word a, Word b, Word imm) {
   switch (op) {
   case OP_ADD:
@@ -61,25 +61,25 @@ Word do_alu(OpCode op, Word a, Word b, Word imm) {
   }
 }
 
-/* Simulates a Load operation from memory */
+/* Load operation from memory */
 Word do_ld(Word base, Word imm, MemoryBank *mem) {
   uint32_t addr = addr_of(base, imm);
   return mem_load(mem, addr);
 }
 
-/* Simulates a Store operation to memory */
+/* Store operation to memory */
 void do_st(Word base, Word imm, Word val, MemoryBank *mem) {
   uint32_t addr = addr_of(base, imm);
   mem_store(mem, addr, val);
 }
 
-/* Performs a vector addition operation on an entire vector register */
+/* Vector addition */
 void do_vadd(Word *dst, const Word *a, const Word *b) {
   for (int i = 0; i < VLEN; i++)
     dst[i] = a[i] + b[i];
 }
 
-/* Performs a vector multiplication operation on an entire vector register */
+/* Vector multiplication */
 void do_vmul(Word *dst, const Word *a, const Word *b) {
   for (int i = 0; i < VLEN; i++)
     dst[i] = a[i] * b[i];

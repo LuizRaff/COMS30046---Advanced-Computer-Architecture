@@ -5,7 +5,8 @@
 #include <stdio.h>
 #include <string.h>
 
-/* Converts an opcode enumeration value into its string representation */
+/* Converts any OPCODE enumeration code into a human-readable string
+ * representation - OUTPUT Purps.*/
 static const char *op_to_str(OpCode op) {
   switch (op) {
   case OP_NOP:
@@ -63,7 +64,8 @@ static const char *op_to_str(OpCode op) {
   }
 }
 
-/* Formats an instruction into a human-readable string buffer */
+/* Transforms any instruction struct into a human-readable string - OUTPUT
+ * Purps.*/
 void inst_to_str(char *buf, size_t n, const Instruction *inst) {
   const char *op = op_to_str(inst->op);
   switch (inst->op) {
@@ -130,8 +132,8 @@ void inst_to_str(char *buf, size_t n, const Instruction *inst) {
   }
 }
 
-/* Saves the values for rs1 and rs2 where they need to be stored inside the
- * instruction struct */
+/* Retrieves the source registers (rs1 and rs2) from an instruction
+ * struct - used by the instruction decoder/executor. */
 static void get_sources(const Instruction *inst, int *rs1, int *rs2) {
   *rs1 = -1;
   *rs2 = -1;
@@ -166,7 +168,7 @@ static void get_sources(const Instruction *inst, int *rs1, int *rs2) {
   }
 }
 
-/* Maps an instruction to the type of execution unit it requires */
+/* Retrieves the execution unit type required by an instruction */
 static ExecutionUnitType get_required_eu(const Instruction *inst) {
   switch (inst->op) {
   case OP_LD:
@@ -190,7 +192,7 @@ static ExecutionUnitType get_required_eu(const Instruction *inst) {
 }
 
 /* Consults the branch predictor to determine if a branch is predicted taken or
- * not */
+ * not (internal to the pipeline) */
 static int bp_predict(Processor *cpu, uint32_t pc, const Instruction *inst) {
   int is_branch = (inst->op == OP_B || inst->op == OP_J || inst->op == OP_BLTH);
   if (!is_branch)
@@ -213,7 +215,7 @@ static int bp_predict(Processor *cpu, uint32_t pc, const Instruction *inst) {
 }
 
 /* Updates the branch predictor's internal state (PHT and local history) after a
- * branch resolves */
+ * branch resolves (internal to the pipeline) */
 static void bp_update(Processor *cpu, uint32_t pc, int taken) {
   switch (cpu->cfg.bp_type) {
   case BP_NONE:
@@ -242,8 +244,7 @@ static void bp_update(Processor *cpu, uint32_t pc, int taken) {
   }
 }
 
-/* Initializes the processor structure, allocates memory, and configures
- * execution units */
+/* Initializes the processor and everything else */
 int setup_cpu(Processor *cpu, size_t mem_words, ProcessorConfig cfg) {
   memset(cpu, 0, sizeof(Processor));
   cpu->cfg = cfg;
@@ -264,11 +265,10 @@ int setup_cpu(Processor *cpu, size_t mem_words, ProcessorConfig cfg) {
   return 0;
 }
 
-/* Frees all memory associated with the processor */
+/* Frees all memory */
 void free_cpu(Processor *cpu) { mem_free(&cpu->mem); }
 
-/* Resets the processor pipelines, queues, structures, and metrics back to their
- * initial state */
+/* Resets the processor */
 void reset_cpu(Processor *cpu) {
   cpu->pc = 0;
   cpu->cycles = 0;
@@ -310,8 +310,7 @@ void reset_cpu(Processor *cpu) {
   regs_clear(&cpu->rf);
 }
 
-/* Executes a single clock cycle of the out-of-order processor pipeline:
- * Commit -> Writeback -> Schedule -> Issue -> Fetch */
+/* Commit -> Writeback -> Schedule -> Issue -> Fetch */
 int tick(Processor *cpu, const Instruction *program, size_t program_len) {
 
   if ((cpu->halted || cpu->pc >= program_len) && cpu->iq_count == 0) {
@@ -723,7 +722,6 @@ int tick(Processor *cpu, const Instruction *program, size_t program_len) {
   return 0;
 }
 
-/* Returns a human-readable name for the branch predictor type */
 static const char *bp_name(BranchPredictorType t) {
   switch (t) {
   case BP_NONE:
@@ -739,7 +737,7 @@ static const char *bp_name(BranchPredictorType t) {
   }
 }
 
-/* Prints performance statistics and metrics for the simulation run */
+/* OUTPUT */
 void print_stats(const Processor *cpu) {
   double ipc = cpu->cycles ? (double)cpu->instrs / cpu->cycles : 0.0;
   double acc = cpu->total_branches
@@ -766,8 +764,6 @@ void print_stats(const Processor *cpu) {
   printf("==========================\n");
 }
 
-/* Runs the simulator continuously until the program halts or the maximum number
- * of steps is reached */
 int run_program(Processor *cpu, const Instruction *program, size_t program_len,
                 uint64_t max_steps) {
   for (uint64_t s = 0; s < max_steps; s++) {

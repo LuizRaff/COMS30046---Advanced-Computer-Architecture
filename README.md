@@ -1,19 +1,17 @@
 # Superscalar CPU Simulator
 
-This is a simple cycle-level CPU simulator written in C for the Advanced Computer Architecture assignment.
+This is a simple cycle-level CPU simulator implemented in C for the Advanced Computer Architecture assignment. The CPU simulated within the simulator has the following features:
 
-The simulator models the core mechanisms of a superscalar, out-of-order processor:
+- instruction fetch and issue
+- reservation stations
+- multiple execution units (ALU, load/store, branch, vector)
+- out-of-order execution with in-order commit (reorder buffer)
+- register renaming using the register alias table
+- branch prediction
+- configurable issue width and ALU count
+- an integer vector unit
 
-- instruction fetch and issue;
-- reservation stations;
-- multiple execution units;
-- reorder buffer with in-order commit;
-- register renaming through a register alias table;
-- configurable branch prediction;
-- configurable issue width and ALU count;
-- a simple integer vector unit.
-
-The goal of the simulator is not to model a commercial CPU in full detail. The goal is to isolate a few architectural features and show how they affect cycles, IPC, branch accuracy, flushes and dynamic instruction count.
+The goal of this CPU is not to provide a realistic model of any commercial CPU. Instead, the goal is to implement each of these features individually, such that they can be tested individually to observe their effect on the simulator.
 
 ---
 
@@ -64,14 +62,14 @@ The simulator accepts the following command-line options:
 
 ### Benchmarks
 
-| Benchmark               | Purpose                                                      |
-| ----------------------- | ------------------------------------------------------------ |
-| `independent_alu`       | Independent ALU operations; used to test superscalar scaling |
-| `dependent_alu`         | Dependent ALU chain; used to show dependency bottlenecks     |
-| `branch_loop`           | Simple loop branch behavior                                  |
-| `branch_pattern`        | Repeating branch pattern; used to compare branch predictors  |
-| `scalar_vector_add`     | Scalar vector-add baseline                                   |
-| `vectorized_vector_add` | Vectorized vector-add using the vector unit                  |
+| Benchmark             | Description                                                                                                                                                |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| independent_alu       | A workload composed of operations that can be performed in parallel by the superscalar execution units; used to test the superscalar capability of the CPU |
+| dependent_alu         | A workload composed of operations that are performed in sequence (due to data dependency); used to test the ability of the CPU to stall execution units    |
+| branch_loop           | A loop that branches to itself; used to test branch prediction and pipeline flush on misprediction                                                         |
+| branch_pattern        | A workload whose branches can be predicted by the branch predictors; used to compare the accuracy of the branch prediction units                           |
+| scalar_vector_add     | A workload that performs vector operations with both scalar and vector units                                                                               |
+| vectorized_vector_add | A workload that performs vector operations using the vector execution unit                                                                                 |
 
 ### Branch predictor modes
 
@@ -105,27 +103,27 @@ Example:
 
 ## 3. Processor Model
 
-The processor model includes:
+The features of the processor within the simulator are the following:
 
-- scalar integer register file;
-- memory for loads and stores;
-- instruction queue;
-- reservation stations;
-- ALU, load/store, branch and vector execution units;
-- reorder buffer for precise in-order commit;
-- register alias table for register renaming;
-- branch prediction and pipeline flush on misprediction;
-- vector register file with fixed vector length of 4 integers.
+- scalar integer register file
+- memory for loads and stores
+- instruction queue
+- reservation stations
+- ALU, load/store, branch and vector execution units
+- reorder buffer
+- register alias table
+- branch prediction and flush on misprediction
+- vector register file of fixed length of 4 integers
 
-The main execution flow is:
+The execution flow for the simulator is:
 
-1. fetch instructions;
-2. issue instructions into the ROB and reservation stations;
-3. wait until operands are ready;
-4. execute ready instructions on available execution units;
-5. broadcast results to waiting reservation stations;
-6. mark ROB entries as ready;
-7. commit completed instructions in program order.
+- fetch instructions
+- issue instructions into the reorder buffer and reservation stations
+- wait for instructions to become ready (have all operands)
+- execute issued instructions in the execution units
+- broadcast results to reservation stations
+- mark instructions in the reorder buffer as ready
+- commit reordered instructions in program order
 
 ---
 
@@ -133,7 +131,7 @@ The main execution flow is:
 
 ### Hypothesis
 
-Dynamic branch prediction should reduce mispredictions, branch flushes and total cycles compared with simple static prediction, especially when the branch behavior follows a repeated pattern.
+Dynamic branch prediction will reduce the number of mispredictions, branch flushes, and cycles taken by the processor relative to static prediction alone.
 
 ### Command
 
@@ -152,9 +150,9 @@ make test-branch
 
 ### Interpretation
 
-The two-level predictor performs best on the patterned branch benchmark. It learns repeated local branch behavior better than static prediction and the simple two-bit counter. This reduces branch flushes and improves IPC.
+The two-level predictor works best on benchmarks with patterned branches. It can learn the local branch patterns better than static prediction and the two-bit counter. This reduces branch flushes and improves the instruction fetch and execute cycle.
 
-For the simpler `branch_loop` benchmark, `always` performs best because most loop branches are taken until the final iteration. This is expected and shows that the best predictor depends on the branch pattern.
+For the branch_loop benchmark, the always predictor is the best. This is because most of the branches in the loop are taken until the last iteration. The best predictor for each benchmark depends on the pattern of branches in that benchmark.
 
 ---
 
@@ -162,7 +160,7 @@ For the simpler `branch_loop` benchmark, `always` performs best because most loo
 
 ### Hypothesis
 
-Increasing issue width and the number of ALUs should improve IPC when the program has enough instruction-level parallelism. The same hardware increase should have limited benefit when the instruction stream is dominated by true data dependencies.
+Increasing the issue width and the number of ALUs will improve the IPC for programs with enough ILP. Adding more hardware will have limited benefit for programs with many true data dependencies between instructions.
 
 ### Command
 
@@ -188,36 +186,11 @@ make test-superscalar
 
 ### Interpretation
 
-The independent benchmark scales well because the out-of-order backend can issue multiple ready instructions to multiple ALUs. The dependent benchmark does not scale because each instruction waits for the previous one. In that case, the bottleneck is the dependency chain, not the amount of hardware.
+The independent benchmark will scale well with increasing issue width and number of ALUs. The dependent benchmark will not scale because each instruction in the dependent chain will have to wait for the previous one to complete. The dependencies will be the limiting factor in the execution of the dependent benchmark.
 
 ---
 
-## 6. Experiment 3: Vector Unit
-
-### Hypothesis
-
-Vector instructions should reduce dynamic instruction count and total cycles for data-parallel workloads because one vector instruction processes multiple data elements.
-
-### Command
-
-```bash
-make test-vector
-```
-
-### Result
-
-| Benchmark             | Correctness | Cycles | Instructions committed |  IPC |
-| --------------------- | ----------- | -----: | ---------------------: | ---: |
-| scalar_vector_add     | PASS        |    143 |                    150 | 1.05 |
-| vectorized_vector_add | PASS        |     49 |                     42 | 0.86 |
-
-### Interpretation
-
-The vectorized benchmark commits fewer instructions and completes in fewer cycles. IPC is slightly lower, but overall performance improves because each vector instruction performs work on 4 integers at once.
-
----
-
-## 7. Output Metrics
+## 6. Output Metrics
 
 Each run prints a metrics block like this:
 
@@ -243,24 +216,18 @@ RS full stalls:      0
 
 ---
 
-## 8. Known Limitations
+## 7. Known Limitations
 
-This simulator intentionally keeps several parts simple:
+The simulator is intentionally simple with a few features removed or simplified:
 
-1. **No cache hierarchy**  
-   Memory is modeled as a simple memory system. There is no L1/L2 cache model.
+1. No cache hierarchy. Memory is modeled as a simple memory system with no L1 or L2 cache model.
 
-2. **Integer-only execution**  
-   There is no floating-point unit.
+2. Integer-only unit. The simulator has no floating point unit.
 
-3. **Single-core only**  
-   There is no multicore or simultaneous multithreading support.
+3. Single-core processor. There is no support for multicore or multithreading.
 
-4. **Conservative memory ordering**  
-   Loads are blocked behind older unresolved stores to avoid incorrect memory behavior without implementing a full load/store queue.
+4. Memory ordering. Loads can be blocked behind stores with unresolved addresses to simulate dependencies without implementing a load/store queue.
 
-5. **Simple vector model**  
-   The vector unit uses 8 vector registers with fixed vector length 4. Vector register renaming is not implemented, so vector operations are kept simple and ordered enough to preserve correctness.
+5. Vector unit. The vector unit has 8 registers with a length of 4. There is no vector register renaming.
 
-6. **Simplified timing model**  
-   The simulator is cycle-level, but it is not intended to reproduce the exact timing of a real commercial processor.
+6. Timing model. The simulator can model the processor at the cycle level but does not aim to model the real commercial processor’s timing.

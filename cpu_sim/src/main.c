@@ -11,7 +11,6 @@
 #define C_BASE 0x0200
 #define ARRAY_N 16
 
-/* Populates the instruction array with independent ALU operations */
 static size_t bm_independent_alu(Instruction *p) {
   int n = 0;
   for (int i = 1; i <= 20; i++)
@@ -21,7 +20,6 @@ static size_t bm_independent_alu(Instruction *p) {
   return n;
 }
 
-/* Populates the instruction array with dependent ALU operations */
 static size_t bm_dependent_alu(Instruction *p) {
   int n = 0;
   p[n++] = (Instruction){.op = OP_LDC, .rd = 1, .imm = 0, .has_imm = true};
@@ -32,7 +30,6 @@ static size_t bm_dependent_alu(Instruction *p) {
   return n;
 }
 
-/* Populates the instruction array with a simple branch loop */
 static size_t bm_branch_loop(Instruction *p) {
   int n = 0;
   p[n++] = (Instruction){.op = OP_LDC, .rd = 1, .imm = 0, .has_imm = true};
@@ -46,7 +43,6 @@ static size_t bm_branch_loop(Instruction *p) {
   return n;
 }
 
-/* Populates the instruction array with a complex alternating branch pattern */
 static size_t bm_branch_pattern(Instruction *p) {
 
   int n = 0;
@@ -71,7 +67,7 @@ static size_t bm_branch_pattern(Instruction *p) {
   return n;
 }
 
-/* Initializes memory arrays used by the vector benchmarks */
+/* Initializes memory arrays for vector benchmarks */
 static void setup_arrays(Processor *cpu) {
   for (int i = 0; i < ARRAY_N; i++) {
     mem_store(&cpu->mem, (uint32_t)(B_BASE + i * 4), (Word)(i + 1));
@@ -80,7 +76,6 @@ static void setup_arrays(Processor *cpu) {
   }
 }
 
-/* Populates the instruction array with a scalar vector addition loop */
 static size_t bm_scalar_vector_add(Instruction *p) {
   int n = 0;
   p[n++] = (Instruction){.op = OP_LDC, .rd = 1, .imm = A_BASE, .has_imm = true};
@@ -112,7 +107,6 @@ static size_t bm_scalar_vector_add(Instruction *p) {
   return n;
 }
 
-/* Populates the instruction array with a vectorized addition loop */
 static size_t bm_vectorized_vector_add(Instruction *p) {
   int n = 0;
   p[n++] = (Instruction){.op = OP_LDC, .rd = 1, .imm = A_BASE, .has_imm = true};
@@ -155,8 +149,6 @@ static void usage(void) {
   printf("BP modes: none, always, two-bit, two-level\n");
 }
 
-/* Main entry point: parses arguments, initializes the CPU, and runs the
- * requested benchmark */
 int main(int argc, char **argv) {
   const char *benchmark = NULL;
   BranchPredictorType bp = BP_TWO_BIT;
