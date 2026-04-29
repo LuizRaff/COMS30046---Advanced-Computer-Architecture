@@ -9,21 +9,21 @@
 #include <stdint.h>
 
 /* ----- Sizing constants -------------------------------------------------- */
-#define ROB_SIZE   32
-#define RS_SIZE    32
-#define IQ_SIZE    16
-#define BP_TABLE   256
-#define MAX_EUS    8
-#define LOCAL_HIST_SIZE  64  /* entries in local history table */
-#define LOCAL_HIST_BITS  4   /* bits per local history register */
-#define PHT_SIZE   (1 << LOCAL_HIST_BITS)  /* pattern history table entries */
+#define ROB_SIZE 32
+#define RS_SIZE 32
+#define IQ_SIZE 16
+#define BP_TABLE 256
+#define MAX_EUS 8
+#define LOCAL_HIST_SIZE 64              /* entries in local history table */
+#define LOCAL_HIST_BITS 4               /* bits per local history register */
+#define PHT_SIZE (1 << LOCAL_HIST_BITS) /* pattern history table entries */
 
 /* ----- Branch predictor modes -------------------------------------------- */
 typedef enum {
-  BP_NONE,            /* always predict not-taken */
-  BP_ALWAYS_TAKEN,    /* always predict taken */
-  BP_TWO_BIT,         /* 2-bit saturating counter per PC */
-  BP_TWO_LEVEL_LOCAL  /* per-branch local history + PHT */
+  BP_NONE,           /* always predict not-taken */
+  BP_ALWAYS_TAKEN,   /* always predict taken */
+  BP_TWO_BIT,        /* 2-bit saturating counter per PC */
+  BP_TWO_LEVEL_LOCAL /* per-branch local history + PHT */
 } bp_type_t;
 
 /* ----- Execution unit types ---------------------------------------------- */
@@ -32,7 +32,7 @@ typedef enum {
   EU_TYPE_LSU,
   EU_TYPE_BRU,
   EU_TYPE_VEC,
-  EU_TYPE_NONE  /* for NOP / HALT — no EU needed */
+  EU_TYPE_NONE /* for NOP / HALT — no EU needed */
 } eu_type_t;
 
 /* ----- Instruction queue entry ------------------------------------------- */
@@ -51,12 +51,12 @@ typedef struct {
   uint32_t pc;
   eu_type_t req_eu;
 
-  int qj;          /* ROB index of source 1, -1 if ready */
-  int qk;          /* ROB index of source 2, -1 if ready */
+  int qj; /* ROB index of source 1, -1 if ready */
+  int qk; /* ROB index of source 2, -1 if ready */
   word_t vj;
   word_t vk;
   word_t imm;
-  int dest_rob;    /* ROB entry index */
+  int dest_rob; /* ROB entry index */
 } rs_entry_t;
 
 /* ----- ROB entry types --------------------------------------------------- */
@@ -66,8 +66,8 @@ typedef enum {
   ROB_TYPE_BRANCH,
   ROB_TYPE_HALT,
   ROB_TYPE_NOP,
-  ROB_TYPE_VEC_WRITE,  /* writes a vector register */
-  ROB_TYPE_VEC_STORE   /* vector store */
+  ROB_TYPE_VEC_WRITE, /* writes a vector register */
+  ROB_TYPE_VEC_STORE  /* vector store */
 } rob_inst_type_t;
 
 /* ----- ROB entry --------------------------------------------------------- */
@@ -79,11 +79,11 @@ typedef struct {
   uint32_t pc;
   rob_inst_type_t type;
 
-  int dest_reg;       /* architectural scalar dest, or -1 */
-  int dest_vreg;      /* architectural vector dest, or -1 */
-  word_t result;      /* scalar result / store addr / branch outcome */
-  word_t store_data;  /* scalar store data */
-  word_t vec_result[VLEN];  /* vector result data */
+  int dest_reg;            /* architectural scalar dest, or -1 */
+  int dest_vreg;           /* architectural vector dest, or -1 */
+  word_t result;           /* scalar result / store addr / branch outcome */
+  word_t store_data;       /* scalar store data */
+  word_t vec_result[VLEN]; /* vector result data */
 
   int branch_taken;
   int branch_mispredicted;
@@ -98,18 +98,18 @@ typedef struct {
   int rs_idx;
   int dest_rob;
   word_t result;
-  word_t result_extra;  /* e.g. correct_pc */
-  int flag_extra;       /* e.g. branch_mispredicted */
+  word_t result_extra; /* e.g. correct_pc */
+  int flag_extra;      /* e.g. branch_mispredicted */
   word_t vec_result[VLEN];
 } exec_unit_t;
 
 /* ----- CPU configuration ------------------------------------------------- */
 typedef struct {
-  int issue_width;  /* instructions issued per cycle */
-  int num_alus;     /* number of ALU execution units */
-  int num_lsus;     /* load/store units (default 1) */
-  int num_brus;     /* branch units (default 1) */
-  int num_vec;      /* vector units (0 or 1) */
+  int issue_width; /* instructions issued per cycle */
+  int num_alus;    /* number of ALU execution units */
+  int num_lsus;    /* load/store units (default 1) */
+  int num_brus;    /* branch units (default 1) */
+  int num_vec;     /* vector units (0 or 1) */
   bp_type_t bp_type;
   const char *benchmark_name;
 } cpu_config_t;
@@ -124,9 +124,9 @@ typedef struct {
   cpu_config_t cfg;
 
   /* Branch predictor state */
-  uint8_t bp_table[BP_TABLE];                       /* 2-bit counters */
-  uint8_t local_hist[LOCAL_HIST_SIZE];               /* local history regs */
-  uint8_t pht[LOCAL_HIST_SIZE][PHT_SIZE];            /* pattern history table */
+  uint8_t bp_table[BP_TABLE];             /* 2-bit counters */
+  uint8_t local_hist[LOCAL_HIST_SIZE];    /* local history regs */
+  uint8_t pht[LOCAL_HIST_SIZE][PHT_SIZE]; /* pattern history table */
 
   /* Instruction queue (between fetch and issue) */
   iq_entry_t iq[IQ_SIZE];
@@ -135,7 +135,7 @@ typedef struct {
   int iq_count;
 
   /* Register alias table */
-  int rat[NUM_REGS];    /* maps arch reg to ROB index, -1 if in regfile */
+  int rat[NUM_REGS]; /* maps arch reg to ROB index, -1 if in regfile */
 
   /* Reservation stations */
   rs_entry_t rs[RS_SIZE];
@@ -165,7 +165,7 @@ typedef struct {
 } cpu_t;
 
 /* ----- API --------------------------------------------------------------- */
-int  setup_cpu(cpu_t *cpu, size_t mem_words, cpu_config_t cfg);
+int setup_cpu(cpu_t *cpu, size_t mem_words, cpu_config_t cfg);
 void free_cpu(cpu_t *cpu);
 void reset_cpu(cpu_t *cpu);
 

@@ -10,7 +10,13 @@
 
 int main(void) {
   cpu_t cpu;
-  cpu_config_t cfg = { .issue_width=1, .num_alus=2, .num_lsus=1, .num_brus=1, .num_vec=1, .bp_type=BP_TWO_BIT, .benchmark_name="test" };
+  cpu_config_t cfg = {.issue_width = 1,
+                      .num_alus = 2,
+                      .num_lsus = 1,
+                      .num_brus = 1,
+                      .num_vec = 1,
+                      .bp_type = BP_TWO_BIT,
+                      .benchmark_name = "test"};
   if (setup_cpu(&cpu, 64, cfg) != 0) {
     printf("Failed to init CPU\n");
     return 1;

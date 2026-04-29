@@ -7,7 +7,7 @@
 typedef int32_t word_t;
 
 #define NUM_REGS 32
-#define VLEN     4
+#define VLEN 4
 #define NUM_VREG 8
 
 typedef struct {
